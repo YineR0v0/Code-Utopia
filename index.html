@@ -76,8 +76,21 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);
   display:flex;flex-direction:column;gap:11px;flex-shrink:0;
   background:rgba(20,20,24,.35);
+  overflow:hidden;
+  transition:padding .2s;
 }
-.settings.collapsed .body{display:none}
+.settings.collapsed{
+  padding-top:8px;
+  padding-bottom:8px;
+}
+.settings .body{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+}
+.settings.collapsed .body{
+  display:none !important;
+}
 .settings .h{
   display:flex;justify-content:space-between;cursor:pointer;
   font-size:12px;color:#8b94a8;font-weight:600;align-items:center;user-select:none;min-height:32px;
@@ -663,7 +676,26 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .settings{padding:12px 14px}
   .field input,.field select{font-size:16px;padding:12px 12px}
   .box textarea{font-size:16px}
-  .msgs{padding:14px}
+   .settings{
+    padding:10px 14px;
+    max-height:55vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .settings.collapsed{
+    max-height:44px;
+    padding-top:8px;
+    padding-bottom:8px;
+  }
+  .msgs{
+    padding:14px;
+    min-height:120px;
+    flex:1;
+  }
+  .composer{
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+    flex-shrink:0;
+  }
   .bubble{font-size:14px;line-height:1.7}
   .composer{padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
   .btn-go{padding:12px 22px;font-size:14px;min-height:48px}
@@ -770,7 +802,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>API 配置</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </div>
-      <div class="body" style="display:flex;flex-direction:column;gap:11px">
+      <div class="body">
         <div class="field">
           <label>保存的密钥配置</label>
           <div class="row">
