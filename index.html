@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6d5cff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05060a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Lumen · AI 前端生成器</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:-apple-system,"Segoe UI","PingFang SC",system-ui,sans-serif;color:#e8ecf4;overflow:hidden;
+background:#05060a;
+background-image:
+  radial-gradient(1200px 800px at 10% -10%, rgba(109,92,255,.28), transparent 55%),
+  radial-gradient(1000px 700px at 100% 0%, rgba(167,139,250,.16), transparent 50%),
+  radial-gradient(900px 600px at 50% 110%, rgba(34,197,94,.10), transparent 55%),
+  radial-gradient(700px 500px at 90% 90%, rgba(236,72,153,.08), transparent 55%);
+background-attachment:fixed;
+-webkit-user-select:none;user-select:none;
+-webkit-font-smoothing:antialiased;
+}
+input,textarea{-webkit-user-select:text;user-select:text}
+button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color:transparent}
+
+/* 桌面端保留三栏 */
+.app{display:flex;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;min-width:0;position:relative;flex-shrink:0;
+background:rgba(15,17,23,.55);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);
+border-right:1px solid rgba(255,255,255,.06)}
+.panel::before{content:'';position:absolute;inset:0;pointer-events:none;
+background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 40%);z-index:0}
+.panel>*{position:relative;z-index:1}
+.left{width:380px}
+.mid{flex:1;min-width:280px}
+.right{flex:1;min-width:280px;border-right:none}
+
+.head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;gap:8px;
+background:rgba(20,24,36,.4);
+padding-top:calc(14px + env(safe-area-inset-top))}
+.title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#dbe4f5;letter-spacing:.2px}
+.logo{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;
+background:linear-gradient(135deg,#6d5cff,#a78bfa);box-shadow:0 4px 14px -2px rgba(109,92,255,.6)}
+.logo svg{width:14px;height:14px;color:#fff}
+.tag{font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:600;letter-spacing:.3px;
+border:1px solid rgba(245,158,11,.35);color:#fcd34d;background:rgba(245,158,11,.12);
+backdrop-filter:blur(8px);white-space:nowrap}
+.tag.live{border-color:rgba(34,197,94,.35);color:#86efac;background:rgba(34,197,94,.12)}
+
+.settings{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:11px;flex-shrink:0;
+background:rgba(20,24,36,.35)}
+.settings.collapsed .body{display:none}
+.settings .h{display:flex;justify-content:space-between;cursor:pointer;font-size:12px;color:#8b94a8;font-weight:600;align-items:center;user-select:none;min-height:32px}
+.settings .h svg{transition:transform .25s;width:12px;height:12px}
+.settings.collapsed .h svg{transform:rotate(-90deg)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:#5a6478;font-weight:500}
+.field input,.field select{background:rgba(10,12,18,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);
+border-radius:9px;padding:11px 12px;font-size:13px;font-family:inherit;width:100%;
+backdrop-filter:blur(10px);transition:all .18s;-webkit-appearance:none;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field input:focus,.field select:focus{outline:none;border-color:rgba(109,92,255,.6);background:rgba(10,12,18,.9);box-shadow:0 0 0 3px rgba(109,92,255,.12)}
+.field select:disabled{opacity:.5}
+.row{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+padding:11px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;
+border:1px solid rgba(255,255,255,.08);background:rgba(20,24,36,.6);color:#c9d1e3;
+backdrop-filter:blur(10px);transition:all .18s;min-height:44px}
+.btn:hover{border-color:rgba(109,92,255,.5);color:#fff;background:rgba(109,92,255,.12)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:14px;height:14px}
+.btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:4px;
+padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(20,24,36,.6);
+color:#8b94a8;cursor:pointer;font-size:12px;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;min-height:36px}
+.btn-sm:hover{border-color:rgba(109,92,255,.5);color:#fff}
+.btn-sm:active{transform:scale(.95)}
+.btn-sm.danger:hover{border-color:rgba(239,68,68,.5);color:#fca5a5}
+.btn-sm svg{width:13px;height:13px}
+.conn{font-size:11px;display:flex;align-items:center;gap:6px;min-height:16px;color:#8b94a8;padding:0 4px}
+.conn .dot{width:7px;height:7px;border-radius:50%;background:#5a6478;flex-shrink:0}
+.conn.ok{color:#86efac}.conn.ok .dot{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8)}
+.conn.err{color:#fca5a5}.conn.err .dot{background:#ef4444}
+.conn.loading{color:#a5d6ff}.conn.loading .dot{background:#6d5cff;animation:pl 1s infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.3}}
+.hint{font-size:10.5px;color:#5a6478;line-height:1.55;padding:9px 11px;border-radius:9px;
+background:rgba(109,92,255,.06);border:1px dashed rgba(109,92,255,.2);backdrop-filter:blur(8px)}
+.hint b{color:#a78bfa}
+
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:0;-webkit-overflow-scrolling:touch}
+.msg{display:flex;gap:10px;animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.av{width:28px;height:28px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;font-size:12px;font-weight:700;
+background:linear-gradient(135deg,#6d5cff,#a78bfa);color:#fff;box-shadow:0 4px 12px -4px rgba(109,92,255,.6)}
+.av svg{width:14px;height:14px}
+.msg.user .av{background:linear-gradient(135deg,#2563eb,#3b82f6);box-shadow:0 4px 12px -4px rgba(37,99,235,.6)}
+.bubble{flex:1;font-size:13px;line-height:1.65;color:#c9d1e3;padding-top:4px;word-break:break-word;white-space:pre-wrap}
+.bubble .sub{display:block;font-size:11px;color:#5a6478;margin-top:4px}
+
+.guide{padding:24px 4px;display:flex;flex-direction:column;gap:20px;align-items:center;text-align:center;animation:rise .4s ease}
+.orb{width:72px;height:72px;border-radius:24px;position:relative;
+background:linear-gradient(135deg,#6d5cff,#a78bfa);
+box-shadow:0 20px 60px -10px rgba(109,92,255,.7),inset 0 1px 0 rgba(255,255,255,.2);
+display:grid;place-items:center;animation:float 3s ease-in-out infinite}
+.orb::before{content:'';position:absolute;inset:1px;border-radius:23px;background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 50%);pointer-events:none}
+.orb svg{width:32px;height:32px;color:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.guide h3{font-size:17px;font-weight:700;letter-spacing:.2px;color:#fff}
+.guide>p{font-size:12px;color:#8b94a8;line-height:1.65;max-width:300px}
+.steps{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:4px}
+.step{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:10px;
+background:rgba(20,24,36,.5);border:1px solid rgba(255,255,255,.05);backdrop-filter:blur(10px);text-align:left}
+.step .num{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:700;
+background:rgba(109,92,255,.2);color:#a78bfa;flex-shrink:0;margin-top:1px}
+.step .txt{flex:1;font-size:12px;color:#8b94a8;line-height:1.5}
+.step .txt b{color:#dbe4f5;font-weight:600}
+.quick{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.qlabel{font-size:10.5px;color:#5a6478;font-weight:600;letter-spacing:.5px;text-transform:uppercase;text-align:left;padding-left:2px}
+.qcard{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;
+background:rgba(20,24,36,.5);border:1px solid rgba(255,255,255,.06);
+cursor:pointer;transition:all .18s;text-align:left;font-family:inherit;color:inherit;width:100%;
+backdrop-filter:blur(10px);min-height:56px}
+.qcard:active{transform:scale(.98);border-color:rgba(109,92,255,.5);background:rgba(109,92,255,.12)}
+.qcard .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;
+background:linear-gradient(135deg,rgba(109,92,255,.25),rgba(167,139,250,.15));
+border:1px solid rgba(167,139,250,.2);color:#a78bfa}
+.qcard .ic svg{width:17px;height:17px}
+.qcard .txt{flex:1;min-width:0}
+.qcard .txt b{display:block;font-size:13px;color:#dbe4f5;font-weight:600;margin-bottom:2px}
+.qcard .txt span{display:block;font-size:11px;color:#5a6478}
+.qcard .arrow{color:#5a6478;font-size:14px}
+
+.composer{padding:12px 14px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(20,24,36,.35);
+padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.box{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(10,12,18,.7);
+backdrop-filter:blur(14px);overflow:hidden;transition:all .18s}
+.box:focus-within{border-color:rgba(109,92,255,.5);box-shadow:0 0 0 3px rgba(109,92,255,.12)}
+.box textarea{width:100%;height:80px;padding:13px 14px;background:transparent;color:#e8ecf4;border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6}
+.box textarea:focus{outline:none}
+.box textarea::placeholder{color:#3f4759}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06);gap:8px;flex-wrap:wrap}
+.modify-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:#8b94a8;cursor:pointer;user-select:none;padding:6px 8px;border-radius:6px;border:1px solid transparent;transition:all .15s}
+.modify-toggle input{accent-color:#f59e0b;cursor:pointer;width:14px;height:14px}
+.modify-toggle.active{color:#fcd34d;border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
+.kbd{display:none}
+.btn-go{display:inline-flex;align-items:center;gap:7px;padding:11px 20px;border-radius:11px;border:none;cursor:pointer;font-weight:600;font-size:13.5px;color:#fff;font-family:inherit;
+background:linear-gradient(135deg,#6d5cff,#8b5cf6);box-shadow:0 8px 24px -6px rgba(109,92,255,.7),inset 0 1px 0 rgba(255,255,255,.15);transition:all .18s;min-height:44px}
+.btn-go:active:not(:disabled){transform:scale(.97)}
+.btn-go.modify{background:linear-gradient(135deg,#f59e0b,#ea580c);box-shadow:0 8px 24px -6px rgba(245,158,11,.7),inset 0 1px 0 rgba(255,255,255,.15)}
+.btn-go svg{width:15px;height:15px}
+.btn-go:disabled{opacity:.45;cursor:not-allowed}
+.btn-cont{display:none;align-items:center;gap:6px;padding:11px 14px;border-radius:11px;
+border:1px solid rgba(34,197,94,.4);cursor:pointer;font-weight:600;font-size:13px;color:#86efac;
+background:rgba(34,197,94,.12);font-family:inherit;transition:all .18s;min-height:44px}
+.btn-cont.show{display:inline-flex}
+.btn-cont:active{transform:scale(.97)}
+.btn-cont svg{width:15px;height:15px}
+
+.code{flex:1;display:flex;flex-direction:column;padding:10px 12px;gap:8px;min-height:0}
+.tools{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;padding-bottom:2px}
+.tools::-webkit-scrollbar{display:none}
+.tool{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;
+background:rgba(20,24,36,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;
+cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;
+white-space:nowrap;min-height:36px;flex-shrink:0}
+.tool:active{transform:scale(.95)}
+.tool.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.08)}
+.tool svg{width:13px;height:13px}
+.comp-layout{flex:1;display:flex;gap:8px;min-height:0}
+.comp-side{width:170px;flex-shrink:0;display:flex;flex-direction:column;
+background:rgba(10,12,18,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;
+backdrop-filter:blur(14px)}
+.comp-side-head{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;color:#8b94a8;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.comp-list{flex:1;overflow-y:auto;padding:6px;-webkit-overflow-scrolling:touch}
+.comp-item{padding:10px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#c9d1e3;display:flex;align-items:center;gap:6px;margin-bottom:3px;transition:all .12s;user-select:none;min-height:40px}
+.comp-item:active{background:rgba(255,255,255,.06)}
+.comp-item.active{background:rgba(109,92,255,.18);color:#a78bfa;border:1px solid rgba(109,92,255,.35);padding:9px 8px}
+.comp-item.disabled{opacity:.4}
+.comp-item .cdot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px rgba(34,197,94,.6)}
+.comp-item.disabled .cdot{background:#5a6478;box-shadow:none}
+.comp-item .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-item .ctype{font-size:9.5px;color:#5a6478;font-family:monospace;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.04)}
+.comp-item .ctype.css{color:#7dd3fc;background:rgba(125,211,252,.1)}
+.comp-item .ctype.js{color:#fcd34d;background:rgba(252,211,77,.1)}
+.comp-item .ctype.html{color:#86efac;background:rgba(134,239,172,.1)}
+.comp-actions{padding:6px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:4px}
+.comp-actions button{flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);
+background:rgba(20,24,36,.6);color:#8b94a8;cursor:pointer;font-size:11px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px}
+.comp-actions button:active{transform:scale(.95)}
+.comp-actions button svg{width:12px;height:12px}
+.editor-col{flex:1;display:flex;flex-direction:column;min-width:0;gap:6px}
+.comp-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#5a6478;min-height:24px;flex-wrap:wrap}
+.comp-bar input{background:rgba(10,12,18,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;width:110px}
+.comp-bar input:focus{outline:none;border-color:rgba(109,92,255,.5)}
+.comp-bar select{background:rgba(10,12,18,.7);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace}
+.editor-wrap{flex:1;min-height:0;border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;background:rgba(10,12,18,.6);position:relative;backdrop-filter:blur(14px)}
+#editor{position:absolute;inset:0}
+.ta{flex:1;padding:15px;background:rgba(10,12,18,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.06);border-radius:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.7;resize:none;white-space:pre;overflow:auto;tab-size:2;width:100%}
+.ta:focus{outline:none;border-color:rgba(109,92,255,.5)}
+
+.pv-tools{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex-wrap:wrap;background:rgba(20,24,36,.3)}
+.vp{display:flex;background:rgba(10,12,18,.6);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:2px;gap:2px;backdrop-filter:blur(10px)}
+.vpb{width:36px;height:32px;border-radius:7px;border:none;background:transparent;color:#5a6478;cursor:pointer;display:grid;place-items:center;font-family:inherit;transition:all .15s}
+.vpb:active{transform:scale(.93)}
+.vpb.active{background:linear-gradient(135deg,#6d5cff,#8b5cf6);color:#fff;box-shadow:0 4px 12px -2px rgba(109,92,255,.6)}
+.vpb svg{width:15px;height:15px}
+.vp-size{font-size:11px;color:#5a6478;font-family:monospace;background:rgba(10,12,18,.6);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:6px 10px;min-width:88px;text-align:center;backdrop-filter:blur(10px)}
+.win-inputs{display:flex;align-items:center;gap:4px}
+.win-inputs input{width:52px;background:rgba(10,12,18,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px;font-size:11px;font-family:monospace;text-align:center}
+.win-inputs span{color:#5a6478;font-size:11px}
+.pv-wrap{flex:1;padding:12px 14px 14px;display:flex;flex-direction:column;min-height:0;position:relative;overflow:hidden;
+padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.pv{flex:1;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;background:#fff;
+box-shadow:0 20px 60px -16px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);
+position:relative;display:flex;flex-direction:column;transition:width .2s,height .2s;margin:0 auto;width:100%;min-width:180px;min-height:140px}
+.pv.nosmooth{transition:none!important}
+.pv-frame{border-radius:28px;border:10px solid rgba(26,29,38,.95);box-shadow:0 24px 70px -14px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.06)}
+.pv-frame .pv-bar{background:rgba(26,29,38,.95);border-color:rgba(255,255,255,.06)}
+.pv-frame::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:70px;height:14px;background:rgba(26,29,38,.95);border-radius:0 0 12px 12px;z-index:3}
+.pv-bar{height:32px;background:rgba(20,24,36,.9);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:7px;padding:0 12px;flex-shrink:0}
+.d{width:9px;height:9px;border-radius:50%}.dr{background:#ff5f57}.dy{background:#febc2e}.dg{background:#28c840}
+.addr{flex:1;margin-left:8px;font-size:10.5px;color:#5a6478;background:rgba(10,12,18,.8);border-radius:5px;padding:3px 9px;border:1px solid rgba(255,255,255,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv iframe{flex:1;border:none;background:#fff;width:100%}
+.rz{position:absolute;z-index:60;touch-action:none}
+.rz.n,.rz.s{left:10px;right:10px;height:14px;cursor:ns-resize}
+.rz.n{top:-7px}.rz.s{bottom:-7px}
+.rz.e,.rz.w{top:10px;bottom:10px;width:14px;cursor:ew-resize}
+.rz.e{right:-7px}.rz.w{left:-7px}
+.rz.nw,.rz.ne,.rz.sw,.rz.se{width:22px;height:22px}
+.rz.nw{top:-8px;left:-8px;cursor:nwse-resize}
+.rz.ne{top:-8px;right:-8px;cursor:nesw-resize}
+.rz.sw{bottom:-8px;left:-8px;cursor:nesw-resize}
+.rz.se{bottom:-8px;right:-8px;cursor:nwse-resize}
+.rz.se::after{content:'';position:absolute;right:4px;bottom:4px;width:8px;height:8px;border-right:2px solid #8b94a8;border-bottom:2px solid #8b94a8;border-radius:0 0 3px 0}
+
+.overlay{position:absolute;inset:0;background:rgba(5,6,10,.8);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:40;border-radius:14px}
+.overlay.show{display:flex}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(109,92,255,.2);border-top-color:#6d5cff;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.overlay p{font-size:13px;color:#8b94a8;letter-spacing:.3px}
+.timer{font-size:13px;color:#a5d6ff;font-family:monospace;background:rgba(109,92,255,.12);padding:5px 12px;border-radius:8px;border:1px solid rgba(109,92,255,.25)}
+.timer b{color:#fff;font-weight:700}
+
+.hist{position:absolute;top:0;left:0;width:280px;height:100%;background:rgba(10,12,18,.9);backdrop-filter:blur(22px);
+border-right:1px solid rgba(255,255,255,.08);z-index:45;display:none;flex-direction:column;box-shadow:8px 0 30px -10px rgba(0,0,0,.7)}
+.hist.show{display:flex}
+.hist-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:#c9d1e3;
+padding-top:calc(14px + env(safe-area-inset-top))}
+.hist-head .close{cursor:pointer;color:#5a6478;font-size:18px;padding:4px 10px;border-radius:6px;min-height:32px;display:flex;align-items:center}
+.hist-head .close:active{background:rgba(255,255,255,.06);color:#c9d1e3}
+.hist-list{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.hist-item{padding:12px 12px;border-radius:9px;background:rgba(20,24,36,.6);border:1px solid rgba(255,255,255,.06);margin-bottom:8px;cursor:pointer;transition:all .15s;backdrop-filter:blur(8px)}
+.hist-item:active{transform:scale(.98)}
+.hist-item.current{border-color:rgba(109,92,255,.6);background:rgba(109,92,255,.15)}
+.hist-item .v{font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:3px}
+.hist-item .p{font-size:12px;color:#c9d1e3;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.hist-item .t{font-size:10px;color:#5a6478;margin-top:4px;font-family:monospace}
+.hist-empty{text-align:center;color:#5a6478;font-size:12px;padding:30px 10px;line-height:1.7}
+
+#projectsView{position:fixed;inset:0;z-index:9000;display:none;flex-direction:column;
+background:rgba(5,6,10,.95);backdrop-filter:blur(30px);
+background-image:
+  radial-gradient(1200px 800px at 10% -10%, rgba(109,92,255,.25), transparent 55%),
+  radial-gradient(1000px 700px at 100% 0%, rgba(167,139,250,.15), transparent 50%)}
+#projectsView.show{display:flex}
+.pv-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;
+padding-top:calc(16px + env(safe-area-inset-top))}
+.pv-head h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
+.pv-head h1 .logo{width:32px;height:32px;border-radius:10px}
+.pv-head h1 .logo svg{width:16px;height:16px}
+.pv-head .back{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:9px;
+border:1px solid rgba(255,255,255,.08);background:rgba(20,24,36,.6);color:#c9d1e3;cursor:pointer;font-size:13px;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;min-height:40px}
+.pv-head .back:active{transform:scale(.97)}
+.pv-head .back svg{width:15px;height:15px}
+.pv-body{flex:1;overflow-y:auto;padding:20px 20px;-webkit-overflow-scrolling:touch;
+padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.pv-toolbar{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+.pv-toolbar input{flex:1;background:rgba(10,12,18,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;font-family:inherit;backdrop-filter:blur(10px)}
+.pv-toolbar input:focus{outline:none;border-color:rgba(109,92,255,.5)}
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.proj-card{background:rgba(20,24,36,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;position:relative;backdrop-filter:blur(14px)}
+.proj-card:active{transform:scale(.98)}
+.proj-card.active{border-color:rgba(109,92,255,.6);background:rgba(109,92,255,.1)}
+.proj-card .pemoji{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6d5cff,#a78bfa);display:grid;place-items:center;margin-bottom:12px;box-shadow:0 6px 20px -6px rgba(109,92,255,.7)}
+.proj-card .pemoji svg{width:22px;height:22px;color:#fff}
+.proj-card h3{font-size:14px;font-weight:600;margin-bottom:4px;word-break:break-word}
+.proj-card .meta{font-size:11px;color:#5a6478;line-height:1.6}
+.proj-card .del{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;
+border:1px solid rgba(255,255,255,.08);background:rgba(10,12,18,.8);color:#5a6478;cursor:pointer;font-size:14px;
+display:flex;align-items:center;justify-content:center;transition:all .15s}
+.proj-card .del:hover{border-color:rgba(239,68,68,.5);color:#fca5a5;background:rgba(239,68,68,.12)}
+.new-proj{border:2px dashed rgba(255,255,255,.1);background:rgba(20,24,36,.3);border-radius:14px;padding:16px;
+cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:140px;
+color:#5a6478;transition:all .18s;backdrop-filter:blur(10px)}
+.new-proj:active{transform:scale(.97)}
+.new-proj .plus{font-size:26px}
+.new-proj span{font-size:13px}
+.pv-empty{text-align:center;padding:60px 20px;color:#5a6478;font-size:13px;line-height:1.8}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px}
+#errbar{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(127,29,29,.95);color:#fecaca;padding:10px 16px;font-size:12.5px;font-family:monospace;border-bottom:2px solid #ef4444;backdrop-filter:blur(10px);
+padding-top:calc(10px + env(safe-area-inset-top))}
+#errbar b{color:#fff}
+#errbar .x{float:right;cursor:pointer;color:#fff;font-weight:700;padding:0 6px}
+.model-search{position:relative}
+.model-search input{padding-right:32px}
+.model-search .clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#5a6478;font-size:16px;line-height:1;padding:4px;min-height:24px;display:flex;align-items:center}
+.model-search .clear:active{color:#c9d1e3}
+
+/* ============ 移动端专用样式 ============ */
+.mobile-tabs{display:none}
+.mobile-only{display:none}
+
+@media (max-width: 900px), (pointer: coarse) {
+  .app{flex-direction:column}
+  .panel{display:none}
+  .panel.mobile-active{display:flex;flex:1;width:100%!important;border-right:none;
+    padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  .mobile-tabs{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;
+    background:rgba(15,17,23,.92);backdrop-filter:blur(24px) saturate(180%);
+    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom);
+    height:calc(60px + env(safe-area-inset-bottom))}
+  .mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    border:none;background:transparent;color:#5a6478;cursor:pointer;font-family:inherit;font-size:10.5px;
+    font-weight:600;transition:all .18s;position:relative;padding:8px 4px;-webkit-tap-highlight-color:transparent}
+  .mtab svg{width:22px;height:22px;transition:all .18s}
+  .mtab.active{color:#a78bfa}
+  .mtab.active svg{color:#a78bfa;filter:drop-shadow(0 0 8px rgba(167,139,250,.6))}
+  .mtab .badge{position:absolute;top:6px;right:50%;margin-right:-18px;
+    background:#ef4444;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;display:none}
+  .mtab .badge.show{display:block}
+  .mtab:active{transform:scale(.93)}
+  /* 移动端调整 */
+  .head{padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top))}
+  .settings{padding:12px 14px}
+  .field input,.field select{font-size:16px;padding:12px 12px} /* 16px 防 iOS 缩放 */
+  .box textarea{font-size:16px}
+  .msgs{padding:14px}
+  .bubble{font-size:14px;line-height:1.7}
+  .composer{padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+  .btn-go{padding:12px 22px;font-size:14px;min-height:48px}
+  .btn-cont{padding:12px 16px;font-size:14px;min-height:48px}
+  .comp-side{width:140px}
+  .comp-layout{flex-direction:column}
+  .comp-side{width:100%;max-height:140px;flex-direction:row;border-radius:10px}
+  .comp-side-head{writing-mode:initial;width:auto;border-bottom:none;border-right:1px solid rgba(255,255,255,.06);padding:8px 10px}
+  .comp-list{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:6px;gap:4px;-webkit-overflow-scrolling:touch}
+  .comp-list::-webkit-scrollbar{display:none}
+  .comp-item{flex-shrink:0;margin-bottom:0;min-height:44px;padding:8px 12px}
+  .comp-item.active{padding:7px 11px}
+  .comp-actions{flex-direction:row;border-top:none;border-left:1px solid rgba(255,255,255,.06);padding:6px;flex-wrap:nowrap;width:auto}
+  .comp-actions button{min-width:36px}
+  .code{padding:8px 10px;gap:6px}
+  .tools{gap:4px;padding-bottom:4px}
+  .tool{padding:8px 10px;font-size:11.5px;min-height:36px}
+  .pv-tools{padding:8px 10px;gap:5px}
+  .vp-size{display:none}
+  .win-inputs{display:none}
+  .pv-wrap{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .hist{width:85%;max-width:340px}
+  .pv-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .pv-head{padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top))}
+  .pv-body{padding:16px}
+  .pv-toolbar{flex-wrap:wrap}
+  .pv-toolbar input{min-width:0}
+  .mobile-only{display:inline-flex}
+  /* 输入框键盘弹出时，composer 固定 */
+  .composer{position:relative;z-index:20}
+  /* 引导卡片更紧凑 */
+  .guide{padding:20px 4px;gap:18px}
+  .orb{width:64px;height:64px;border-radius:20px}
+  .orb svg{width:28px;height:28px}
+  .guide h3{font-size:16px}
+  .qcard{min-height:60px;padding:14px}
+  /* 隐藏桌面快捷提示 */
+  .kbd{display:none}
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .msgs{max-height:calc(100vh - 280px)}
+}
+/* 极窄屏 */
+@media (max-width: 380px) {
+  .comp-side{max-height:120px}
+  .pv-grid{grid-template-columns:1fr}
+  .qcard .txt b{font-size:12px}
+  .qcard .txt span{font-size:10px}
+}
+</style>
+</head>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+<body>
+<div id="errbar"><span class="x" onclick="document.getElementById('errbar').style.display='none'">✕</span><b>错误：</b><span id="errtext"></span></div>
+
+<div id="projectsView">
+  <div class="pv-head">
+    <h1><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>我的工程</h1>
+    <button class="back" onclick="closeProjects()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>返回</button>
+  </div>
+  <div class="pv-body">
+    <div class="pv-toolbar">
+      <input type="text" id="projSearch" placeholder="搜索工程名称…" oninput="renderProjects()">
+      <button class="tool" onclick="createProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新建</button>
+    </div>
+    <div class="pv-grid" id="projGrid"></div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- 对话面板 -->
+  <aside class="panel left mobile-active" id="panelChat">
+    <div class="head">
+      <div class="title"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>Lumen</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="tag" id="modeTag">演示模式</span>
+        <button class="btn-sm" onclick="openProjects()" title="切换工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>工程</button>
+      </div>
+    </div>
+
+    <div class="settings" id="settings">
+      <div class="h" onclick="document.getElementById('settings').classList.toggle('collapsed')">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>API 配置</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="body" style="display:flex;flex-direction:column;gap:11px">
+        <div class="field">
+          <label>保存的密钥配置</label>
+          <div class="row">
+            <select id="keySelect" onchange="switchKeyProfile(this.value)" style="flex:1">
+              <option value="">— 选择配置 —</option>
+            </select>
+            <button class="btn-sm" onclick="newKeyProfile()" title="新建"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+            <button class="btn-sm danger" onclick="deleteKeyProfile()" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </div>
+        <div class="field">
+          <label>配置名称</label>
+          <input type="text" id="profileName" placeholder="如：DeepSeek 官方 / 本地 Ollama">
+        </div>
+        <div class="field"><label>Base URL</label><input type="text" id="baseUrl" value="https://api.deepseek.com/v1"></div>
+        <div class="field"><label>API Key</label><input type="password" id="apiKey" placeholder="sk-... 留空则用内置演示"></div>
+        <div class="row">
+          <button class="btn" id="testBtn" onclick="testConnection()" style="flex:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>测试</button>
+          <button class="btn" onclick="saveKeyProfile(event)" style="flex:0 0 auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>保存</button>
+        </div>
+        <div class="conn" id="conn"><span class="dot"></span><span class="txt">未连接</span></div>
+        <div class="field">
+          <label>模型 <span id="modelCount" style="color:#5a6478"></span></label>
+          <div class="model-search">
+            <input type="text" id="modelFilter" placeholder="搜索模型…" oninput="filterModels()" style="display:none">
+            <span class="clear" id="modelFilterClear" onclick="clearModelFilter()" style="display:none">✕</span>
+          </div>
+          <select id="model" disabled><option value="">先测试连接以拉取模型</option></select>
+        </div>
+        <div class="hint"><b>提示：</b>Key 只存本机。若真实调用报 CORS 错误，说明该服务不允许浏览器直连，需用带后端的版本。</div>
+      </div>
+    </div>
+
+    <div class="msgs" id="msgs"></div>
+    <div class="composer">
+      <div class="box">
+        <textarea id="prompt" placeholder="描述你想要的页面…&#10;例如：一个深色风格的 SaaS 登录页"></textarea>
+        <div class="bar">
+          <label class="modify-toggle" id="modifyToggle">
+            <input type="checkbox" id="modifyMode" onchange="onModifyToggle(this.checked)">
+            <span>修改现有代码</span>
+          </label>
+          <button class="btn-cont" id="contBtn" onclick="continueGenerate()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>继续
+          </button>
+          <button class="btn-go" id="genBtn" onclick="generate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>生成</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 代码面板 -->
+  <main class="panel mid" id="panelCode">
+    <div class="head">
+      <div class="title">
+        <span class="logo" style="background:linear-gradient(135deg,#22c55e,#16a34a)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+        代码 / 组件
+      </div>
+      <button class="tool" onclick="toggleHistory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史</button>
+    </div>
+    <div class="hist" id="hist">
+      <div class="hist-head"><span>版本历史</span><span class="close" onclick="toggleHistory()">✕</span></div>
+      <div class="hist-list" id="histList"></div>
+    </div>
+    <div class="code">
+      <div class="tools">
+        <button class="tool" id="copyBtn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
+        <button class="tool" id="dlBtn" onclick="downloadZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ZIP</button>
+        <button class="tool" id="fmtBtn" onclick="formatCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>格式化</button>
+        <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
+        <button class="tool" onclick="resplitComponents()" title="重新识别并分区当前代码"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>分区</button>
+      </div>
+      <div class="comp-layout">
+        <div class="comp-side">
+          <div class="comp-side-head"><span>组件</span><span id="compCount" style="color:#5a6478;font-weight:400"></span></div>
+          <div class="comp-list" id="compList"></div>
+          <div class="comp-actions">
+            <button onclick="addComponent()" title="新建"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+            <button onclick="deleteComponent()" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            <button onclick="toggleComponent()" title="启用/禁用"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></button>
+          </div>
+        </div>
+        <div class="editor-col">
+          <div class="comp-bar">
+            <input type="text" id="compName" oninput="renameComponent(this.value)" placeholder="组件名">
+            <select id="compType" onchange="changeComponentType(this.value)">
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="js">JS</option>
+            </select>
+            <span id="compOrder" style="margin-left:auto;color:#5a6478"></span>
+            <button class="btn-sm" onclick="moveComponent(-1)" title="上移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+            <button class="btn-sm" onclick="moveComponent(1)" title="下移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="editor-wrap">
+            <div id="editor"></div>
+            <textarea class="ta" id="fallbackTa" style="display:none"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 预览面板 -->
+  <section class="panel right" id="panelPreview">
+    <div class="head">
+      <div class="title">
+        <span class="logo" style="background:linear-gradient(135deg,#06b6d4,#0891b2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        实时预览
+      </div>
+      <button class="tool" onclick="refreshPreview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>刷新</button>
+    </div>
+    <div class="pv-tools">
+      <div class="vp">
+        <button class="vpb active" id="vpDesktop" onclick="setViewport('desktop')" title="铺满"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
+        <button class="vpb" id="vpTablet" onclick="setViewport('tablet')" title="平板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></button>
+        <button class="vpb" id="vpMobile" onclick="setViewport('mobile')" title="手机"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></button>
+      </div>
+      <span class="vp-size" id="vpSize">100% · 铺满</span>
+      <div class="win-inputs">
+        <input type="number" id="winW" placeholder="宽" min="180">
+        <span>×</span>
+        <input type="number" id="winH" placeholder="高" min="140">
+        <button class="tool" style="padding:6px 8px" onclick="applyCustomSize()">应用</button>
+      </div>
+      <div style="flex:1"></div>
+      <button class="tool" onclick="toggleRotate()" title="横竖屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+      <button class="tool" onclick="fillPreview()" title="铺满"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg></button>
+      <button class="tool" onclick="resetViewport()" title="重置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+    </div>
+    <div class="pv-wrap" id="pvWrap">
+      <div class="pv" id="pv">
+        <div class="pv-bar"><span class="d dr"></span><span class="d dy"></span><span class="d dg"></span><span class="addr" id="addr">preview://live</span></div>
+        <iframe id="preview" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
+        <div class="overlay" id="overlay">
+          <div class="spin"></div>
+          <p id="overlayText">正在生成…</p>
+          <div class="timer" id="timer" style="display:none">已用 <b id="timerNum">0.0</b> 秒</div>
+        </div>
+        <div class="rz n" data-dir="n"></div>
+        <div class="rz s" data-dir="s"></div>
+        <div class="rz e" data-dir="e"></div>
+        <div class="rz w" data-dir="w"></div>
+        <div class="rz nw" data-dir="nw"></div>
+        <div class="rz ne" data-dir="ne"></div>
+        <div class="rz sw" data-dir="sw"></div>
+        <div class="rz se" data-dir="se"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 移动端底部导航 -->
+<div class="mobile-tabs" id="mobileTabs">
+  <button class="mtab active" data-tab="chat" onclick="switchMobileTab('chat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>对话</span>
+    <span class="badge" id="chatBadge"></span>
+  </button>
+  <button class="mtab" data-tab="code" onclick="switchMobileTab('code')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    <span>代码</span>
+  </button>
+  <button class="mtab" data-tab="preview" onclick="switchMobileTab('preview')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>预览</span>
+  </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
