@@ -19,7 +19,7 @@ function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function isMobile(){ return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches; }
 
-/* ================= 移动端 Tab 切换 ================= */
+/* ================= 移动端 Tab ================= */
 function switchMobileTab(tab){
   state.mobileTab = tab;
   var tabs = document.querySelectorAll('.mtab');
@@ -31,12 +31,10 @@ function switchMobileTab(tab){
     var p = $(panels[key]);
     if(p) p.classList.toggle('mobile-active', key === tab);
   }
-  // 切换后触发一次布局重算（Monaco/预览需要）
   setTimeout(function(){
     if(tab === 'preview'){ applyViewport(); }
     if(tab === 'code' && state.editorReady){ state.editor.layout(); }
-  }, 50);
-  // 清除对话 tab 的未读徽章
+  }, 60);
   if(tab === 'chat'){ var b = $('chatBadge'); if(b) b.classList.remove('show'); }
 }
 
@@ -60,7 +58,7 @@ function stopTimer(){
   return state.lastDuration;
 }
 
-/* ================= 代码完整性检测 ================= */
+/* ================= 完整性检测 ================= */
 function isCodeIncomplete(code){
   if(!code || !code.trim()) return false;
   var trimmed = code.trim();
@@ -75,7 +73,7 @@ function showContinueBtn(show){
   if(btn) btn.classList.toggle('show', !!show);
 }
 
-/* ================= 语言/格式识别 ================= */
+/* ================= 语言识别 ================= */
 function detectLanguage(code){
   if(!code || !code.trim()) return 'html';
   var s = code.trim();
@@ -97,10 +95,7 @@ function smartSplit(raw){
   var firstMark = text.search(/<!DOCTYPE|<html|<head|<body|<style|<script|@media|@keyframes|[\.\#\w\-\[\]]+\s*\{|\/\/|\/\*/i);
   if(firstMark > 0) text = text.slice(firstMark);
 
-  var headContent = '';
-  var styleBlocks = [];
-  var scriptBlocks = [];
-  var bodyContent = '';
+  var headContent = '', styleBlocks = [], scriptBlocks = [], bodyContent = '';
   var hasDoctype = /<!DOCTYPE/i.test(text);
   var m;
 
@@ -172,7 +167,7 @@ function onModifyToggle(checked){
     btn.classList.remove('modify');
     if(lbl) lbl.classList.remove('active');
   }
-  try{ localStorage.setItem('lumen-modify-mode', checked ? '1' : '0'); }catch(e){}
+  try{ localStorage.setItem('cu-modify-mode', checked ? '1' : '0'); }catch(e){}
 }
 function buildModifyContext(){
   var htmlParts = '', cssParts = '', jsParts = '';
@@ -211,8 +206,8 @@ function buildModifySystemPrompt(ctx){
 
 /* ================= 工程管理 ================= */
 function loadProjects(){
-  try{ var raw = localStorage.getItem('lumen-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
-  var activeRaw = localStorage.getItem('lumen-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
+  try{ var raw = localStorage.getItem('cu-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
+  var activeRaw = localStorage.getItem('cu-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
   if(state.projects.length === 0){ var p = newProjectData('我的第一个工程'); state.projects.push(p); state.activeProjectId = p.id; }
   if(!state.activeProjectId || !state.projects.some(function(x){ return x.id === state.activeProjectId; })) state.activeProjectId = state.projects[0].id;
   saveProjects();
@@ -220,14 +215,14 @@ function loadProjects(){
 function newProjectData(name){
   return {
     id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    name: name || '未命名工程', emoji: '✨', createdAt: Date.now(), updatedAt: Date.now(),
-    components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1e1b4b,#0b0d14 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#6d5cff,#a78bfa)">✦</div><h1 style="font-size:22px;margin-bottom:10px">欢迎使用 Lumen</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
+    name: name || '未命名工程', createdAt: Date.now(), updatedAt: Date.now(),
+    components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
     history: [], historyIndex: -1
   };
 }
 function saveProjects(){
-  try{ localStorage.setItem('lumen-projects', JSON.stringify(state.projects)); }catch(e){}
-  try{ localStorage.setItem('lumen-active-project', state.activeProjectId); }catch(e){}
+  try{ localStorage.setItem('cu-projects', JSON.stringify(state.projects)); }catch(e){}
+  try{ localStorage.setItem('cu-active-project', state.activeProjectId); }catch(e){}
 }
 function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
 function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
@@ -355,7 +350,6 @@ function addMsg(role, text, sub){
   if(sub){ var s = document.createElement('span'); s.className='sub'; s.textContent = sub; b.appendChild(s); }
   $('msgs').appendChild(div);
   $('msgs').scrollTop = $('msgs').scrollHeight;
-  // 移动端：非对话 tab 时显示未读徽章
   if(isMobile() && state.mobileTab !== 'chat' && role === 'assistant'){
     var badge = $('chatBadge');
     if(badge) badge.classList.add('show');
@@ -364,17 +358,17 @@ function addMsg(role, text, sub){
 
 /* ================= 密钥管理 ================= */
 function loadKeyProfiles(){
-  try{ var raw = localStorage.getItem('lumen-keys'); if(raw) state.keyProfiles = JSON.parse(raw) || []; }catch(e){ state.keyProfiles = []; }
+  try{ var raw = localStorage.getItem('cu-keys'); if(raw) state.keyProfiles = JSON.parse(raw) || []; }catch(e){ state.keyProfiles = []; }
   if(state.keyProfiles.length === 0){
     try{
-      var old = JSON.parse(localStorage.getItem('lumen-cfg') || '{}');
+      var old = JSON.parse(localStorage.getItem('cu-cfg') || '{}');
       if(old.apiKey) state.keyProfiles.push({ name: '默认配置', baseUrl: old.baseUrl || 'https://api.deepseek.com/v1', apiKey: old.apiKey, model: old.model || '' });
     }catch(e){}
   }
   renderKeySelect();
   if(state.keyProfiles.length > 0) switchKeyProfile('0');
 }
-function saveKeyProfiles(){ try{ localStorage.setItem('lumen-keys', JSON.stringify(state.keyProfiles)); }catch(e){} }
+function saveKeyProfiles(){ try{ localStorage.setItem('cu-keys', JSON.stringify(state.keyProfiles)); }catch(e){} }
 function renderKeySelect(){
   var sel = $('keySelect');
   var html = '<option value="">— 选择配置 —</option>';
@@ -395,6 +389,7 @@ function switchKeyProfile(idx){
   state.allModels = [];
   $('model').innerHTML = '<option value="">先测试连接</option>';
   $('model').disabled = true;
+  // 关键修复：自动恢复上次保存的模型，不用重新选
   if(p.model && p.model.length){
     state.allModels = [p.model];
     $('model').innerHTML = '<option value="' + esc(p.model) + '">' + esc(p.model) + '</option>';
@@ -454,8 +449,13 @@ function populateModels(list){
   $('modelFilter').style.display = list.length > 6 ? 'block' : 'none';
   $('modelFilter').value = '';
   $('modelFilterClear').style.display = 'none';
-  var prefer = list.find(function(m){ return /gpt-4o|deepseek-chat|qwen-plus|claude-3/i.test(m); });
-  if(prefer) sel.value = prefer;
+  // 关键修复：优先用上次保存的模型
+  var savedModel = state.keyProfiles[state.activeProfile] ? (state.keyProfiles[state.activeProfile].model || '') : '';
+  if(savedModel && list.indexOf(savedModel) >= 0){ sel.value = savedModel; }
+  else {
+    var prefer = list.find(function(m){ return /gpt-4o|deepseek-chat|qwen-plus|claude-3/i.test(m); });
+    if(prefer) sel.value = prefer;
+  }
   state.currentModel = sel.value;
 }
 function filterModels(){
@@ -527,7 +527,7 @@ function renderComponents(){
       '<span class="cdot"></span><span class="cname">' + esc(c.name || '未命名') + '</span>' +
       '<span class="ctype ' + c.type + '">' + c.type.toUpperCase() + '</span></div>';
   }
-  if(state.components.length === 0) html = '<div style="padding:20px 10px;text-align:center;color:#5a6478;font-size:11px">还没有组件<br>点下方「＋」新建</div>';
+  if(state.components.length === 0) html = '<div style="padding:20px 10px;text-align:center;color:#5a6478;font-size:11px">还没有组件</div>';
   list.innerHTML = html;
   $('compCount').textContent = '(' + state.components.length + ')';
   var c = state.components[state.activeComp];
@@ -717,7 +717,6 @@ function generate(){
   $('overlayText').textContent = isModify ? '正在理解现有代码…' : '正在思考页面结构…';
   startTimer();
 
-  // 移动端：自动切到预览 tab 看效果
   if(isMobile()) switchMobileTab('preview');
 
   var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
@@ -778,15 +777,11 @@ function generate(){
       }
     })
     .then(function(){
-      var dur = stopTimer();
+      stopTimer();
       state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
+      // 修复：续写按钮常驻，只要当前有代码就显示
       var code = getEditorValue();
-      if(code && isCodeIncomplete(code)){
-        showContinueBtn(true);
-        addMsg('assistant', '⚠️ 代码可能被截断。', '点「继续」按钮让 AI 接着写。');
-      } else {
-        showContinueBtn(false);
-      }
+      showContinueBtn(!!(code && code.trim().length > 100));
     });
   } else {
     if(isModify && hasCode){
@@ -806,12 +801,7 @@ function generate(){
         applyGenerated(fullDemo, p, false);
         stopTimer();
         state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
-        if(isCodeIncomplete(getEditorValue())){
-          showContinueBtn(true);
-          addMsg('assistant', '⚠️ 代码可能被截断。', '点「继续」按钮让 AI 接着写。');
-        } else {
-          showContinueBtn(false);
-        }
+        showContinueBtn(true);
         return;
       }
       fullDemo += chunks[idx++];
@@ -821,7 +811,7 @@ function generate(){
   }
 }
 
-/* ================= 继续生成 ================= */
+/* ================= 继续生成（常驻） ================= */
 function continueGenerate(){
   if(state.loading) return;
   var currentCode = getEditorValue();
@@ -838,9 +828,10 @@ function continueGenerate(){
   $('overlay').classList.add('show');
   $('overlayText').textContent = '正在续写代码…';
   startTimer();
+  if(isMobile()) switchMobileTab('preview');
 
   var systemPrompt = [
-    '你是前端代码续写助手。用户会给你一份【已生成的不完整代码】，你需要从末尾继续写，补全剩余部分。',
+    '你是前端代码续写助手。用户会给你一份【已生成的代码】，你需要从末尾继续写，补全剩余部分。',
     '绝对不要重复已有代码，不要重新开始，不要输出 <!DOCTYPE html> 或 <html> 开头（除非原代码还没写到这里）。',
     '只输出需要追加的新内容，保持原有的缩进和风格。',
     '如果原代码已经接近完整，只补全缺失的闭合标签即可。',
@@ -891,10 +882,8 @@ function continueGenerate(){
             refreshPreview();
             snapshot('⏩ 续写补全');
             var dur = stopTimer();
-            var complete = !isCodeIncomplete(merged);
-            addMsg('assistant', complete ? '✅ 代码已补全。' : '⚠️ 续写完成，但代码仍可能不完整。',
-              '耗时 ' + dur.toFixed(1) + ' 秒' + (complete ? '' : ' · 可再次点「继续」'));
-            showContinueBtn(!complete);
+            addMsg('assistant', '✅ 续写完成。', '耗时 ' + dur.toFixed(1) + ' 秒 · 可继续点「继续」');
+            showContinueBtn(true);
             return;
           }
           buf += dec.decode(r.value, { stream: true });
@@ -921,7 +910,7 @@ function continueGenerate(){
     })
     .then(function(){
       state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
-      if(isCodeIncomplete(getEditorValue())) showContinueBtn(true);
+      showContinueBtn(true);
     });
   } else {
     addMsg('assistant', '演示模式无法续写代码。', '请先配置 API Key 并拉取模型。');
@@ -930,7 +919,7 @@ function continueGenerate(){
   }
 }
 
-/* ================= 应用生成结果（智能分区） ================= */
+/* ================= 应用生成结果 ================= */
 function applyGenerated(html, prompt, isModify){
   var comps = smartSplit(html);
   state.components = comps;
@@ -945,22 +934,22 @@ function applyGenerated(html, prompt, isModify){
     (isModify ? '已根据你的需求修改现有代码。' : '页面已生成，已智能分区为 ' + comps.length + ' 个组件。'),
     '耗时 ' + state.lastDuration.toFixed(1) + ' 秒 · 组件：' + summary
   );
-  if(isCodeIncomplete(html)) showContinueBtn(true);
-  else showContinueBtn(false);
+  // 续写按钮常驻（只要有内容就可续写，不再仅限于截断）
+  showContinueBtn(true);
 }
 
 /* ================= 演示模板 ================= */
 var CLOSE = '<' + '/script>';
 var DEMOS = [
-  { k:['登录','login','登陆'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 px-4"><div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20"><h1 class="text-3xl font-bold text-white mb-2 text-center">欢迎回来</h1><p class="text-white/60 text-sm text-center mb-8">登录你的账户以继续</p><form class="space-y-5" onsubmit="event.preventDefault();alert(\'演示\')"><div><label class="block text-white/80 text-sm mb-2">邮箱</label><input type="email" placeholder="you@example.com" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white"></div><div><label class="block text-white/80 text-sm mb-2">密码</label><input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white"></div><button class="w-full py-3 rounded-lg bg-indigo-500 text-white font-semibold">登 录</button></form></div></body></html>' },
-  { k:['番茄','计时','倒计时','timer','pomodoro'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-500 to-orange-400 p-4"><div class="bg-white/95 rounded-3xl shadow-2xl p-10 w-full max-w-sm text-center"><h1 class="text-xl font-semibold text-gray-500 mb-6">POMODORO</h1><div class="relative w-56 h-56 mx-auto mb-8"><svg class="transform -rotate-90 w-56 h-56"><circle cx="112" cy="112" r="100" stroke="#f1f5f9" stroke-width="12" fill="none"/><circle id="ring" cx="112" cy="112" r="100" stroke="#f43f5e" stroke-width="12" fill="none"/></svg><div class="absolute inset-0 flex items-center justify-center"><span id="d" class="text-5xl font-bold">25:00</span></div></div><div class="flex gap-3 justify-center"><button id="s" class="px-6 py-2.5 rounded-full bg-rose-500 text-white">开始</button><button id="r" class="px-6 py-2.5 rounded-full bg-gray-200">重置</button></div></div><script>var t=1500,l=t,tm=null;function rn(){document.getElementById("d").textContent=String(Math.floor(l/60)).padStart(2,"0")+":"+String(l%60).padStart(2,"0")}document.getElementById("s").onclick=function(){if(tm)return;tm=setInterval(function(){if(l<=0){clearInterval(tm);tm=null;return}l--;rn()},1000)};document.getElementById("r").onclick=function(){clearInterval(tm);tm=null;l=t;rn()};rn();' + CLOSE + '</body></html>' },
-  { k:['待办','todo','任务','清单'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen bg-slate-100 py-12 px-4"><div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6"><h1 class="text-2xl font-bold text-slate-800 mb-6">✅ 待办清单</h1><form id="f" class="flex gap-2 mb-5"><input id="t" placeholder="添加任务…" class="flex-1 px-4 py-2.5 rounded-lg border"><button class="px-5 py-2.5 rounded-lg bg-indigo-500 text-white">添加</button></form><ul id="l" class="space-y-2"></ul></div><script>var it=[{text:"学习 Tailwind",done:false},{text:"构建 AI 应用",done:true}];function rn(){document.getElementById("l").innerHTML=it.map(function(x,i){return "<li class=\\"flex items-center gap-3 p-3 rounded-lg bg-slate-50\\"><input type=\\"checkbox\\" "+(x.done?"checked":"")+" onchange=\\"window.tg("+i+")\\" class=\\"w-4 h-4\\"><span class=\\"flex-1 "+(x.done?"line-through text-slate-400":"")+"\\">"+x.text+"</span></li>"}).join("")}window.tg=function(i){it[i].done=!it[i].done;rn()};document.getElementById("f").onsubmit=function(e){e.preventDefault();var v=document.getElementById("t").value.trim();if(!v)return;it.push({text:v,done:false});document.getElementById("t").value="";rn()};rn();' + CLOSE + '</body></html>' },
-  { k:['仪表','dashboard','数据','图表','admin'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen bg-slate-100"><div class="flex flex-col md:flex-row"><aside class="w-full md:w-56 md:min-h-screen bg-slate-900 text-white p-5"><h1 class="text-xl font-bold mb-8">📊 Admin</h1><nav class="space-y-1 text-sm"><a class="block px-3 py-2 rounded-lg bg-indigo-600">仪表盘</a><a class="block px-3 py-2 rounded-lg">订单</a></nav></aside><main class="flex-1 p-6 md:p-8"><h2 class="text-2xl font-bold mb-6">数据概览</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8"><div class="bg-white p-5 rounded-xl shadow"><p class="text-slate-500 text-sm">今日销售额</p><p class="text-3xl font-bold mt-2">¥ 12,480</p></div><div class="bg-white p-5 rounded-xl shadow"><p class="text-slate-500 text-sm">新增用户</p><p class="text-3xl font-bold mt-2">+ 128</p></div><div class="bg-white p-5 rounded-xl shadow"><p class="text-slate-500 text-sm">订单数</p><p class="text-3xl font-bold mt-2">342</p></div></div></main></div></body></html>' }
+  { k:['登录','login','登陆'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 px-4"><div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20"><h1 class="text-3xl font-bold text-white mb-2 text-center">欢迎回来</h1><p class="text-white/60 text-sm text-center mb-8">登录你的账户以继续</p><form class="space-y-5" onsubmit="event.preventDefault();alert(\'演示\')"><div><label class="block text-white/80 text-sm mb-2">邮箱</label><input type="email" placeholder="you@example.com" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white"></div><div><label class="block text-white/80 text-sm mb-2">密码</label><input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white"></div><button class="w-full py-3 rounded-lg bg-gray-600 hover:bg-gray-500 text-white font-semibold">登 录</button></form></div></body></html>' },
+  { k:['番茄','计时','倒计时','timer','pomodoro'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 p-4"><div class="bg-white/95 rounded-3xl shadow-2xl p-10 w-full max-w-sm text-center"><h1 class="text-xl font-semibold text-gray-500 mb-6">POMODORO</h1><div class="relative w-56 h-56 mx-auto mb-8"><svg class="transform -rotate-90 w-56 h-56"><circle cx="112" cy="112" r="100" stroke="#f1f5f9" stroke-width="12" fill="none"/><circle id="ring" cx="112" cy="112" r="100" stroke="#6b7280" stroke-width="12" fill="none"/></svg><div class="absolute inset-0 flex items-center justify-center"><span id="d" class="text-5xl font-bold">25:00</span></div></div><div class="flex gap-3 justify-center"><button id="s" class="px-6 py-2.5 rounded-full bg-gray-700 text-white">开始</button><button id="r" class="px-6 py-2.5 rounded-full bg-gray-200">重置</button></div></div><script>var t=1500,l=t,tm=null;function rn(){document.getElementById("d").textContent=String(Math.floor(l/60)).padStart(2,"0")+":"+String(l%60).padStart(2,"0")}document.getElementById("s").onclick=function(){if(tm)return;tm=setInterval(function(){if(l<=0){clearInterval(tm);tm=null;return}l--;rn()},1000)};document.getElementById("r").onclick=function(){clearInterval(tm);tm=null;l=t;rn()};rn();' + CLOSE + '</body></html>' },
+  { k:['待办','todo','任务','清单'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen bg-gray-100 py-12 px-4"><div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6"><h1 class="text-2xl font-bold text-gray-800 mb-6">✅ 待办清单</h1><form id="f" class="flex gap-2 mb-5"><input id="t" placeholder="添加任务…" class="flex-1 px-4 py-2.5 rounded-lg border"><button class="px-5 py-2.5 rounded-lg bg-gray-700 text-white">添加</button></form><ul id="l" class="space-y-2"></ul></div><script>var it=[{text:"学习 Tailwind",done:false},{text:"构建 AI 应用",done:true}];function rn(){document.getElementById("l").innerHTML=it.map(function(x,i){return "<li class=\\"flex items-center gap-3 p-3 rounded-lg bg-gray-50\\"><input type=\\"checkbox\\" "+(x.done?"checked":"")+" onchange=\\"window.tg("+i+")\\" class=\\"w-4 h-4\\"><span class=\\"flex-1 "+(x.done?"line-through text-gray-400":"")+"\\">"+x.text+"</span></li>"}).join("")}window.tg=function(i){it[i].done=!it[i].done;rn()};document.getElementById("f").onsubmit=function(e){e.preventDefault();var v=document.getElementById("t").value.trim();if(!v)return;it.push({text:v,done:false});document.getElementById("t").value="";rn()};rn();' + CLOSE + '</body></html>' },
+  { k:['仪表','dashboard','数据','图表','admin'], h:'<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen bg-gray-100"><div class="flex flex-col md:flex-row"><aside class="w-full md:w-56 md:min-h-screen bg-gray-900 text-white p-5"><h1 class="text-xl font-bold mb-8">📊 Admin</h1><nav class="space-y-1 text-sm"><a class="block px-3 py-2 rounded-lg bg-gray-700">仪表盘</a><a class="block px-3 py-2 rounded-lg">订单</a></nav></aside><main class="flex-1 p-6 md:p-8"><h2 class="text-2xl font-bold mb-6">数据概览</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8"><div class="bg-white p-5 rounded-xl shadow"><p class="text-gray-500 text-sm">今日销售额</p><p class="text-3xl font-bold mt-2">¥ 12,480</p></div><div class="bg-white p-5 rounded-xl shadow"><p class="text-gray-500 text-sm">新增用户</p><p class="text-3xl font-bold mt-2">+ 128</p></div><div class="bg-white p-5 rounded-xl shadow"><p class="text-gray-500 text-sm">订单数</p><p class="text-3xl font-bold mt-2">342</p></div></div></main></div></body></html>' }
 ];
 function pickDemo(p){
   var pl = p.toLowerCase();
   for(var i = 0; i < DEMOS.length; i++) for(var j = 0; j < DEMOS[i].k.length; j++) if(pl.indexOf(DEMOS[i].k[j]) >= 0) return DEMOS[i].h;
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-400 to-cyan-500 p-8"><div class="bg-white rounded-2xl shadow-2xl p-10 max-w-lg"><div class="text-4xl mb-4">🤖</div><h1 class="text-2xl font-bold text-slate-800 mb-3">演示模式</h1><p class="text-slate-600 mb-4">你的需求：</p><blockquote class="border-l-4 border-emerald-400 pl-4 italic mb-5">' + esc(p) + '</blockquote><p class="text-sm text-slate-500">内置演示模板。连接真实 API 后可生成任意页面。</p></div></body></html>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com">' + CLOSE + '</head><body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 p-8"><div class="bg-white rounded-2xl shadow-2xl p-10 max-w-lg"><div class="text-4xl mb-4">🤖</div><h1 class="text-2xl font-bold text-gray-800 mb-3">演示模式</h1><p class="text-gray-600 mb-4">你的需求：</p><blockquote class="border-l-4 border-gray-400 pl-4 italic mb-5">' + esc(p) + '</blockquote><p class="text-sm text-gray-500">内置演示模板。连接真实 API 后可生成任意页面。</p></div></body></html>';
 }
 
 /* ================= 复制/下载/格式化 ================= */
@@ -1000,14 +989,14 @@ function downloadZip(){
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000); return;
   }
   var zip = new JSZip();
-  var finalHtml = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + esc((getActiveProject() || {}).name || 'Lumen Project') + '</title>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n' + htmlParts + '\n<script src="script.js"><' + '/script>\n</body>\n</html>';
+  var finalHtml = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + esc((getActiveProject() || {}).name || 'Code Utopia') + '</title>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n' + htmlParts + '\n<script src="script.js"><' + '/script>\n</body>\n</html>';
   zip.file('index.html', finalHtml);
   zip.file('style.css', cssParts);
   zip.file('script.js', jsParts);
-  zip.file('README.md', '# ' + ((getActiveProject() || {}).name || 'Lumen Project') + '\n\n由 Lumen 导出。\n\n- `index.html` — 页面结构\n- `style.css` — 样式\n- `script.js` — 交互\n\n生成时间: ' + new Date().toLocaleString() + '\n');
+  zip.file('README.md', '# ' + ((getActiveProject() || {}).name || 'Code Utopia') + '\n\n由 Code Utopia 导出。\n\n- `index.html` — 页面结构\n- `style.css` — 样式\n- `script.js` — 交互\n\n生成时间: ' + new Date().toLocaleString() + '\n');
   zip.generateAsync({ type: 'blob' }).then(function(content){
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(content); a.download = ((getActiveProject() || {}).name || 'lumen') + '.zip';
+    a.href = URL.createObjectURL(content); a.download = ((getActiveProject() || {}).name || 'code-utopia') + '.zip';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   });
@@ -1172,20 +1161,19 @@ window.addEventListener('load', function(){
   loadActiveProjectIntoState();
   initEditor();
   try{
-    var savedModify = localStorage.getItem('lumen-modify-mode') === '1';
+    var savedModify = localStorage.getItem('cu-modify-mode') === '1';
     var cb = $('modifyMode');
     if(cb){ cb.checked = savedModify; onModifyToggle(savedModify); }
   }catch(e){}
   renderGuide();
   refreshPreview();
   applyViewport();
-  // 初始判断：移动端默认显示对话
   if(isMobile()) switchMobileTab('chat');
   window.addEventListener('resize', function(){
     applyViewport();
     if(state.editorReady && isMobile() && state.mobileTab === 'code') state.editor.layout();
   });
-  console.log('✅ Lumen 初始化完成');
+  console.log('✅ Code Utopia 初始化完成');
 });
 
 /* ================= 引导 ================= */
