@@ -389,13 +389,13 @@ function switchKeyProfile(idx){
   state.allModels = [];
   $('model').innerHTML = '<option value="">先测试连接</option>';
   $('model').disabled = true;
-  // 关键修复：自动恢复上次保存的模型，不用重新选
+  // 恢复上次保存的模型，不用重新选
+  state.currentModel = p.model || '';
   if(p.model && p.model.length){
     state.allModels = [p.model];
     $('model').innerHTML = '<option value="' + esc(p.model) + '">' + esc(p.model) + '</option>';
     $('model').value = p.model;
     $('model').disabled = false;
-    state.currentModel = p.model;
   }
   setConn('', '已切换配置');
   updateMode();
@@ -414,7 +414,7 @@ function saveKeyProfile(ev){
   p.name = $('profileName').value.trim() || ('配置 ' + (state.activeProfile + 1));
   p.baseUrl = $('baseUrl').value.trim();
   p.apiKey = $('apiKey').value.trim();
-  p.model = $('model').value || state.currentModel || '';
+  p.model = $('model').value || state.currentModel || p.model || '';
   saveKeyProfiles();
   renderKeySelect();
   var btn = (ev && ev.target) || (window.event && window.event.target);
@@ -449,14 +449,25 @@ function populateModels(list){
   $('modelFilter').style.display = list.length > 6 ? 'block' : 'none';
   $('modelFilter').value = '';
   $('modelFilterClear').style.display = 'none';
-  // 关键修复：优先用上次保存的模型
+
+  // 优先级：当前下拉已选的 > 配置里保存的 > prefer 规则 > 第一个
+  var currentSel = state.currentModel || '';
   var savedModel = state.keyProfiles[state.activeProfile] ? (state.keyProfiles[state.activeProfile].model || '') : '';
-  if(savedModel && list.indexOf(savedModel) >= 0){ sel.value = savedModel; }
+  var finalModel = '';
+  if(currentSel && list.indexOf(currentSel) >= 0) finalModel = currentSel;
+  else if(savedModel && list.indexOf(savedModel) >= 0) finalModel = savedModel;
   else {
     var prefer = list.find(function(m){ return /gpt-4o|deepseek-chat|qwen-plus|claude-3/i.test(m); });
-    if(prefer) sel.value = prefer;
+    finalModel = prefer || list[0] || '';
   }
+  if(finalModel) sel.value = finalModel;
   state.currentModel = sel.value;
+
+  // 关键修复：拉取完成后立即把当前选中的模型写回配置，避免下次被覆盖
+  if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile] && state.currentModel){
+    state.keyProfiles[state.activeProfile].model = state.currentModel;
+    saveKeyProfiles();
+  }
 }
 function filterModels(){
   var q = $('modelFilter').value.trim().toLowerCase();
@@ -683,6 +694,11 @@ function testConnection(){
       state.connected = true;
       setConn('ok', '已连接 · ' + list.length + ' 个模型可用');
       updateMode();
+      // 立即保存当前选中的模型到配置
+      if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile] && state.currentModel){
+        state.keyProfiles[state.activeProfile].model = state.currentModel;
+        saveKeyProfiles();
+      }
     })
     .catch(function(e){
       state.connected = false;
@@ -779,7 +795,7 @@ function generate(){
     .then(function(){
       stopTimer();
       state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
-      // 修复：续写按钮常驻，只要当前有代码就显示
+      // 续写按钮常驻，只要当前有代码就显示
       var code = getEditorValue();
       showContinueBtn(!!(code && code.trim().length > 100));
     });
@@ -1147,7 +1163,14 @@ function resetViewport(){
   function onChange(){ updateMode(); }
   if(apiKey) apiKey.addEventListener('input', onChange);
   if(baseUrl) baseUrl.addEventListener('input', onChange);
-  if(model) model.addEventListener('change', function(){ state.currentModel = model.value; });
+  if(model) model.addEventListener('change', function(){
+    state.currentModel = model.value;
+    // 选模型时立即保存到当前配置，下次切换/刷新自动恢复
+    if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile]){
+      state.keyProfiles[state.activeProfile].model = model.value;
+      saveKeyProfiles();
+    }
+  });
   if(profileName) profileName.addEventListener('input', onChange);
   var prompt = $('prompt');
   if(prompt) prompt.addEventListener('keydown', function(e){
