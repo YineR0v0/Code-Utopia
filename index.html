@@ -9,109 +9,44 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Code Utopia</title>
 <style>
-.proj-card .proj-actions{position:absolute;top:10px;right:10px;display:flex;gap:4px}
-.proj-card .proj-actions .del{position:static;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0;transition:opacity .15s}
-.proj-card:hover .proj-actions .del{opacity:1}
-.proj-preview{font-size:11px;color:#5a6478;line-height:1.5;margin:6px 0 4px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(255,255,255,.1);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
-  
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;width:100%;overflow:hidden}
-body{
-  font-family:-apple-system,"Segoe UI","PingFang SC",system-ui,sans-serif;
-  color:#e8ecf4;background:#000;
-  background-image:
-    radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12), transparent 55%),
-    radial-gradient(900px 600px at 100% 0%, rgba(90,90,110,.10), transparent 50%),
-    radial-gradient(800px 500px at 50% 110%, rgba(60,60,80,.10), transparent 55%);
-  background-attachment:fixed;-webkit-font-smoothing:antialiased;
-  -webkit-user-select:none;user-select:none;overscroll-behavior:none;
-}
+body{font-family:-apple-system,"Segoe UI","PingFang SC",system-ui,sans-serif;color:#e8ecf4;background:#000;
+background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12), transparent 55%),radial-gradient(900px 600px at 100% 0%, rgba(90,90,110,.10), transparent 50%),radial-gradient(800px 500px at 50% 110%, rgba(60,60,80,.10), transparent 55%);
+background-attachment:fixed;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
 input,textarea,.selectable{-webkit-user-select:text;user-select:text}
 button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color:transparent}
-
 .app{display:flex;height:100%;width:100%;overflow:hidden;position:relative;z-index:1}
-.panel{
-  display:flex;flex-direction:column;min-width:0;position:relative;flex-shrink:0;
-  background:rgba(15,15,18,.55);
-  backdrop-filter:blur(28px) saturate(140%);
-  -webkit-backdrop-filter:blur(28px) saturate(140%);
-  border-right:1px solid rgba(255,255,255,.06);height:100%;
-}
+.panel{display:flex;flex-direction:column;min-width:0;position:relative;flex-shrink:0;background:rgba(15,15,18,.55);backdrop-filter:blur(28px) saturate(140%);-webkit-backdrop-filter:blur(28px) saturate(140%);border-right:1px solid rgba(255,255,255,.06);height:100%}
 .panel::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent 40%);z-index:0}
 .panel>*{position:relative;z-index:1}
 .left{width:380px}.mid{flex:1;min-width:280px}.right{flex:1;min-width:280px;border-right:none}
-
-.head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));
-  border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;gap:8px;
-  background:rgba(20,20,24,.4);
-}
+.head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;gap:8px;background:rgba(20,20,24,.4)}
 .title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#e8ecf4;letter-spacing:.2px}
-.logo{
-  width:24px;height:24px;border-radius:8px;display:grid;place-items:center;
-  background:linear-gradient(135deg,#3a3a42,#1a1a20);
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 4px 14px -2px rgba(0,0,0,.5);
-}
+.logo{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 14px -2px rgba(0,0,0,.5)}
 .logo svg{width:14px;height:14px;color:#d8dce8}
-.tag{
-  font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:600;letter-spacing:.3px;
-  border:1px solid rgba(160,160,170,.3);color:#b0b8c8;background:rgba(120,120,130,.12);
-  backdrop-filter:blur(8px);white-space:nowrap;
-}
+.tag{font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:600;letter-spacing:.3px;border:1px solid rgba(160,160,170,.3);color:#b0b8c8;background:rgba(120,120,130,.12);backdrop-filter:blur(8px);white-space:nowrap}
 .tag.live{border-color:rgba(34,197,94,.35);color:#86efac;background:rgba(34,197,94,.12)}
-
-.settings{
-  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);
-  display:flex;flex-direction:column;gap:11px;flex-shrink:0;
-  background:rgba(20,20,24,.35);overflow:hidden;transition:padding .2s;
-}
+.settings{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:11px;flex-shrink:0;background:rgba(20,20,24,.35);overflow:hidden;transition:padding .2s}
 .settings.collapsed{padding-top:8px;padding-bottom:8px}
 .settings .body{display:flex;flex-direction:column;gap:11px}
 .settings.collapsed .body{display:none!important}
-.settings .h{
-  display:flex;justify-content:space-between;cursor:pointer;
-  font-size:12px;color:#8b94a8;font-weight:600;align-items:center;user-select:none;min-height:32px;
-}
+.settings .h{display:flex;justify-content:space-between;cursor:pointer;font-size:12px;color:#8b94a8;font-weight:600;align-items:center;user-select:none;min-height:32px}
 .settings .h svg{transition:transform .25s;width:12px;height:12px}
 .settings.collapsed .h svg{transform:rotate(-90deg)}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:11px;color:#5a6478;font-weight:500}
-.field input,.field select{
-  background:rgba(8,8,10,.7);color:#e8ecf4;
-  border:1px solid rgba(255,255,255,.08);border-radius:9px;
-  padding:11px 12px;font-size:13px;font-family:inherit;width:100%;
-  backdrop-filter:blur(10px);transition:all .18s;
-  -webkit-appearance:none;appearance:none;-webkit-user-select:text;user-select:text;
-}
-.field select{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
-}
-.field input:focus,.field select:focus{
-  outline:none;border-color:rgba(150,150,160,.5);
-  background:rgba(8,8,10,.9);box-shadow:0 0 0 3px rgba(150,150,160,.1);
-}
+.field input,.field select{background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:11px 12px;font-size:13px;font-family:inherit;width:100%;backdrop-filter:blur(10px);transition:all .18s;-webkit-appearance:none;appearance:none;-webkit-user-select:text;user-select:text}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field input:focus,.field select:focus{outline:none;border-color:rgba(150,150,160,.5);background:rgba(8,8,10,.9);box-shadow:0 0 0 3px rgba(150,150,160,.1)}
 .field select:disabled{opacity:.5}
 .row{display:flex;gap:8px}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:11px 14px;border-radius:10px;cursor:pointer;
-  font-size:13px;font-weight:600;font-family:inherit;
-  border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#c9d1e3;
-  backdrop-filter:blur(10px);transition:all .18s;min-height:44px;
-}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#c9d1e3;backdrop-filter:blur(10px);transition:all .18s;min-height:44px}
 .btn:hover{border-color:rgba(255,255,255,.2);color:#fff;background:rgba(50,50,58,.6)}
 .btn:active{transform:scale(.98)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn svg{width:14px;height:14px}
-.btn-sm{
-  display:inline-flex;align-items:center;justify-content:center;gap:4px;
-  padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);
-  background:rgba(30,30,36,.6);color:#8b94a8;cursor:pointer;font-size:12px;font-family:inherit;
-  backdrop-filter:blur(10px);transition:all .15s;min-height:36px;
-}
+.btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#8b94a8;cursor:pointer;font-size:12px;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;min-height:36px}
 .btn-sm:hover{border-color:rgba(255,255,255,.2);color:#fff}
 .btn-sm:active{transform:scale(.95)}
 .btn-sm.danger:hover{border-color:rgba(239,68,68,.5);color:#fca5a5}
@@ -122,39 +57,18 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .conn.err{color:#fca5a5}.conn.err .dot{background:#ef4444}
 .conn.loading{color:#a5d6ff}.conn.loading .dot{background:#6b7280;animation:pl 1s infinite}
 @keyframes pl{0%,100%{opacity:1}50%{opacity:.3}}
-.hint{
-  font-size:10.5px;color:#5a6478;line-height:1.55;padding:9px 11px;border-radius:9px;
-  background:rgba(150,150,160,.05);border:1px dashed rgba(150,150,160,.15);backdrop-filter:blur(8px);
-}
+.hint{font-size:10.5px;color:#5a6478;line-height:1.55;padding:9px 11px;border-radius:9px;background:rgba(150,150,160,.05);border:1px dashed rgba(150,150,160,.15);backdrop-filter:blur(8px)}
 .hint b{color:#b0b8c8}
-
-.msgs{
-  flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;
-  display:flex;flex-direction:column;gap:14px;min-height:120px;
-  -webkit-overflow-scrolling:touch;
-}
+.msgs{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:120px;-webkit-overflow-scrolling:touch}
 .msg{display:flex;gap:10px;animation:rise .3s ease}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.av{
-  width:28px;height:28px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;
-  font-size:12px;font-weight:700;
-  background:linear-gradient(135deg,#3a3a42,#1a1a20);
-  border:1px solid rgba(255,255,255,.1);color:#d8dce8;
-  box-shadow:0 4px 12px -4px rgba(0,0,0,.5);
-}
+.av{width:28px;height:28px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.1);color:#d8dce8;box-shadow:0 4px 12px -4px rgba(0,0,0,.5)}
 .av svg{width:14px;height:14px}
 .msg.user .av{background:linear-gradient(135deg,#1e3a5f,#0f2540);border-color:rgba(100,150,200,.2)}
 .bubble{flex:1;font-size:13px;line-height:1.65;color:#c9d1e3;padding-top:4px;word-break:break-word;white-space:pre-wrap;-webkit-user-select:text;user-select:text}
 .bubble .sub{display:block;font-size:11px;color:#5a6478;margin-top:4px}
-
 .guide{padding:24px 4px;display:flex;flex-direction:column;gap:20px;align-items:center;text-align:center;animation:rise .4s ease}
-.orb{
-  width:72px;height:72px;border-radius:24px;position:relative;
-  background:linear-gradient(135deg,#2a2a32,#0f0f14);
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 20px 60px -10px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.1);
-  display:grid;place-items:center;animation:float 3s ease-in-out infinite;
-}
+.orb{width:72px;height:72px;border-radius:24px;position:relative;background:linear-gradient(135deg,#2a2a32,#0f0f14);border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px -10px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.1);display:grid;place-items:center;animation:float 3s ease-in-out infinite}
 .orb::before{content:'';position:absolute;inset:1px;border-radius:23px;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent 50%);pointer-events:none}
 .orb svg{width:32px;height:32px;color:#e8ecf4;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -167,93 +81,46 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .step .txt b{color:#dbe4f5;font-weight:600}
 .quick{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .qlabel{font-size:10.5px;color:#5a6478;font-weight:600;letter-spacing:.5px;text-transform:uppercase;text-align:left;padding-left:2px}
-.qcard{
-  display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;
-  background:rgba(20,20,24,.5);border:1px solid rgba(255,255,255,.06);
-  cursor:pointer;transition:all .18s;text-align:left;font-family:inherit;color:inherit;
-  width:100%;backdrop-filter:blur(10px);min-height:56px;
-}
+.qcard{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;background:rgba(20,20,24,.5);border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:all .18s;text-align:left;font-family:inherit;color:inherit;width:100%;backdrop-filter:blur(10px);min-height:56px}
 .qcard:active{transform:scale(.98);border-color:rgba(255,255,255,.2);background:rgba(40,40,48,.6)}
-.qcard .ic{
-  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
-  border:1px solid rgba(255,255,255,.1);color:#b0b8c8;
-}
+.qcard .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);color:#b0b8c8}
 .qcard .ic svg{width:17px;height:17px}
 .qcard .txt{flex:1;min-width:0}
 .qcard .txt b{display:block;font-size:13px;color:#dbe4f5;font-weight:600;margin-bottom:2px}
 .qcard .txt span{display:block;font-size:11px;color:#5a6478}
 .qcard .arrow{color:#5a6478;font-size:14px}
-
-.composer{
-  padding:12px 14px 14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));
-  border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(20,20,24,.35);
-}
+.composer{padding:12px 14px 14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(20,20,24,.35)}
 .box{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(8,8,10,.7);backdrop-filter:blur(14px);overflow:hidden;transition:all .18s}
 .box:focus-within{border-color:rgba(150,150,160,.4);box-shadow:0 0 0 3px rgba(150,150,160,.1)}
-.box textarea{
-  width:100%;height:80px;padding:13px 14px;background:transparent;color:#e8ecf4;
-  border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6;
-  -webkit-user-select:text;user-select:text;
-}
+.box textarea{width:100%;height:80px;padding:13px 14px;background:transparent;color:#e8ecf4;border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6;-webkit-user-select:text;user-select:text}
 .box textarea:focus{outline:none}
 .box textarea::placeholder{color:#3f4759}
 .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06);gap:8px;flex-wrap:wrap}
 .modify-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:#8b94a8;cursor:pointer;user-select:none;padding:6px 8px;border-radius:6px;border:1px solid transparent;transition:all .15s}
 .modify-toggle input{accent-color:#b0b8c8;cursor:pointer;width:14px;height:14px}
 .modify-toggle.active{color:#fcd34d;border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
-.btn-go{
-  display:inline-flex;align-items:center;gap:7px;
-  padding:11px 20px;border-radius:11px;border:none;cursor:pointer;
-  font-weight:600;font-size:13.5px;color:#fff;font-family:inherit;
-  background:linear-gradient(135deg,#3a3a42,#1a1a20);
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 8px 24px -6px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1);
-  transition:all .18s;min-height:44px;
-}
+.btn-go{display:inline-flex;align-items:center;gap:7px;padding:11px 20px;border-radius:11px;border:none;cursor:pointer;font-weight:600;font-size:13.5px;color:#fff;font-family:inherit;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px -6px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1);transition:all .18s;min-height:44px}
 .btn-go:hover:not(:disabled){background:linear-gradient(135deg,#4a4a52,#2a2a30);border-color:rgba(255,255,255,.2)}
 .btn-go:active:not(:disabled){transform:scale(.97)}
 .btn-go.modify{background:linear-gradient(135deg,#f59e0b,#ea580c);border-color:rgba(245,158,11,.4);box-shadow:0 8px 24px -6px rgba(245,158,11,.5)}
 .btn-go svg{width:15px;height:15px}
 .btn-go:disabled{opacity:.45;cursor:not-allowed}
-.btn-cont{
-  display:none;align-items:center;gap:6px;
-  padding:11px 14px;border-radius:11px;
-  border:1px solid rgba(34,197,94,.4);cursor:pointer;
-  font-weight:600;font-size:13px;color:#86efac;
-  background:rgba(34,197,94,.12);font-family:inherit;
-  transition:all .18s;min-height:44px;
-}
+.btn-cont{display:none;align-items:center;gap:6px;padding:11px 14px;border-radius:11px;border:1px solid rgba(34,197,94,.4);cursor:pointer;font-weight:600;font-size:13px;color:#86efac;background:rgba(34,197,94,.12);font-family:inherit;transition:all .18s;min-height:44px}
 .btn-cont.show{display:inline-flex}
 .btn-cont:active{transform:scale(.97)}
 .btn-cont svg{width:15px;height:15px}
-
 .code{flex:1;display:flex;flex-direction:column;padding:10px 12px;gap:8px;min-height:0}
 .tools{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;padding-bottom:2px;flex-shrink:0}
 .tools::-webkit-scrollbar{display:none}
-.tool{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:8px 12px;border-radius:8px;
-  background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);
-  color:#8b94a8;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;
-  backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0;
-}
+.tool{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0}
 .tool:active{transform:scale(.95)}
 .tool.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.08)}
 .tool svg{width:13px;height:13px}
 .comp-layout{flex:1;display:flex;gap:8px;min-height:0;overflow:hidden}
-.comp-side{
-  width:170px;flex-shrink:0;display:flex;flex-direction:column;
-  background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.06);
-  border-radius:10px;overflow:hidden;backdrop-filter:blur(14px);
-}
+.comp-side{width:170px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;backdrop-filter:blur(14px)}
 .comp-side-head{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;color:#8b94a8;font-weight:600;display:flex;justify-content:space-between;align-items:center}
 .comp-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px;-webkit-overflow-scrolling:touch}
-.comp-item{
-  padding:10px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#c9d1e3;
-  display:flex;align-items:center;gap:6px;margin-bottom:3px;transition:all .12s;
-  user-select:none;min-height:40px;
-}
+.comp-item{padding:10px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#c9d1e3;display:flex;align-items:center;gap:6px;margin-bottom:3px;transition:all .12s;user-select:none;min-height:40px}
 .comp-item:active{background:rgba(255,255,255,.06)}
 .comp-item.active{background:rgba(150,150,160,.15);color:#e8ecf4;border:1px solid rgba(150,150,160,.3);padding:9px 8px}
 .comp-item.disabled{opacity:.4}
@@ -265,27 +132,18 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .comp-item .ctype.js{color:#fcd34d;background:rgba(252,211,77,.1)}
 .comp-item .ctype.html{color:#86efac;background:rgba(134,239,172,.1)}
 .comp-actions{padding:6px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:4px;flex-shrink:0}
-.comp-actions button{
-  flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);
-  background:rgba(20,20,24,.6);color:#8b94a8;cursor:pointer;font-size:11px;font-family:inherit;
-  display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px;
-}
+.comp-actions button{flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(20,20,24,.6);color:#8b94a8;cursor:pointer;font-size:11px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px}
 .comp-actions button:active{transform:scale(.95)}
 .comp-actions button svg{width:12px;height:12px}
 .editor-col{flex:1;display:flex;flex-direction:column;min-width:0;gap:6px;overflow:hidden}
 .comp-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#5a6478;min-height:24px;flex-wrap:wrap;flex-shrink:0}
-.comp-bar input{
-  background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);
-  border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;width:110px;
-  -webkit-user-select:text;user-select:text;
-}
+.comp-bar input{background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;width:110px;-webkit-user-select:text;user-select:text}
 .comp-bar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .comp-bar select{background:rgba(8,8,10,.7);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace}
 .editor-wrap{flex:1;min-height:0;border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;background:rgba(8,8,10,.6);position:relative;backdrop-filter:blur(14px)}
 #editor{position:absolute;inset:0}
 .ta{flex:1;padding:15px;background:rgba(8,8,10,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.06);border-radius:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.7;resize:none;white-space:pre;overflow:auto;tab-size:2;width:100%;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
 .ta:focus{outline:none;border-color:rgba(150,150,160,.4)}
-
 .pv-tools{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex-wrap:wrap;background:rgba(20,20,24,.3)}
 .vp{display:flex;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:2px;gap:2px;backdrop-filter:blur(10px)}
 .vpb{width:36px;height:32px;border-radius:7px;border:none;background:transparent;color:#5a6478;cursor:pointer;display:grid;place-items:center;font-family:inherit;transition:all .15s}
@@ -297,12 +155,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .win-inputs input{width:52px;background:rgba(8,8,10,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px;font-size:11px;font-family:monospace;text-align:center}
 .win-inputs span{color:#5a6478;font-size:11px}
 .pv-wrap{flex:1;padding:12px 14px 14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;min-height:0;position:relative;overflow:hidden}
-.pv{
-  flex:1;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;background:#fff;
-  box-shadow:0 20px 60px -16px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);
-  position:relative;display:flex;flex-direction:column;transition:width .2s,height .2s;margin:0 auto;
-  width:100%;min-width:180px;min-height:140px;
-}
+.pv{flex:1;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 20px 60px -16px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);position:relative;display:flex;flex-direction:column;transition:width .2s,height .2s;margin:0 auto;width:100%;min-width:180px;min-height:140px}
 .pv.nosmooth{transition:none!important}
 .pv-frame{border-radius:28px;border:10px solid rgba(26,26,30,.95);box-shadow:0 24px 70px -14px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.06)}
 .pv-frame .pv-bar{background:rgba(26,26,30,.95);border-color:rgba(255,255,255,.06)}
@@ -311,8 +164,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .d{width:9px;height:9px;border-radius:50%}.dr{background:#ff5f57}.dy{background:#febc2e}.dg{background:#28c840}
 .addr{flex:1;margin-left:8px;font-size:10.5px;color:#5a6478;background:rgba(8,8,10,.8);border-radius:5px;padding:3px 9px;border:1px solid rgba(255,255,255,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pv iframe{flex:1;border:none;background:#fff;width:100%}
-
-/* 八向拖拽手柄 —— 加大触摸区，用 pointer 事件 */
 .rz{position:absolute;z-index:60;touch-action:none;user-select:none}
 .rz.n,.rz.s{left:14px;right:14px;height:16px;cursor:ns-resize}
 .rz.n{top:-8px}.rz.s{bottom:-8px}
@@ -328,7 +179,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .rz.n::after{top:6px}.rz.s::after{bottom:6px}
 .rz.e::after,.rz.w::after{content:'';position:absolute;top:50%;transform:translateY(-50%);height:24px;width:3px;background:rgba(139,148,168,.4);border-radius:2px}
 .rz.e::after{right:6px}.rz.w::after{left:6px}
-
 .overlay{position:absolute;inset:0;background:rgba(5,5,6,.8);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:40;border-radius:14px}
 .overlay.show{display:flex}
 .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(150,150,160,.2);border-top-color:#b0b8c8;animation:sp .8s linear infinite}
@@ -336,7 +186,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .overlay p{font-size:13px;color:#8b94a8;letter-spacing:.3px}
 .timer{font-size:13px;color:#a5d6ff;font-family:monospace;background:rgba(150,150,160,.12);padding:5px 12px;border-radius:8px;border:1px solid rgba(150,150,160,.25)}
 .timer b{color:#fff;font-weight:700}
-
 .hist{position:absolute;top:0;left:0;width:280px;height:100%;background:rgba(8,8,10,.9);backdrop-filter:blur(22px);border-right:1px solid rgba(255,255,255,.08);z-index:45;display:none;flex-direction:column;box-shadow:8px 0 30px -10px rgba(0,0,0,.7)}
 .hist.show{display:flex}
 .hist-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:#c9d1e3;padding-top:calc(14px + env(safe-area-inset-top))}
@@ -350,9 +199,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .hist-item .p{font-size:12px;color:#c9d1e3;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .hist-item .t{font-size:10px;color:#5a6478;margin-top:4px;font-family:monospace}
 .hist-empty{text-align:center;color:#5a6478;font-size:12px;padding:30px 10px;line-height:1.7}
-
-#projectsView{position:fixed;inset:0;z-index:9000;display:none;flex-direction:column;background:rgba(5,5,6,.95);backdrop-filter:blur(30px);
-background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12), transparent 55%),radial-gradient(900px 600px at 100% 0%, rgba(90,90,110,.1), transparent 50%)}
+#projectsView{position:fixed;inset:0;z-index:9000;display:none;flex-direction:column;background:rgba(5,5,6,.95);backdrop-filter:blur(30px);background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12), transparent 55%),radial-gradient(900px 600px at 100% 0%, rgba(90,90,110,.1), transparent 50%)}
 #projectsView.show{display:flex}
 .pv-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding-top:calc(16px + env(safe-area-inset-top))}
 .pv-head h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
@@ -365,75 +212,59 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
 .pv-toolbar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
 .pv-toolbar input{flex:1;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;font-family:inherit;backdrop-filter:blur(10px);min-width:150px}
 .pv-toolbar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
-.pv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .proj-card{background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s;position:relative;backdrop-filter:blur(14px)}
 .proj-card:active{transform:scale(.98)}
 .proj-card.active{border-color:rgba(150,150,160,.4);background:rgba(150,150,160,.08)}
 .proj-card .pemoji{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2a2a32,#0f0f14);border:1px solid rgba(255,255,255,.1);display:grid;place-items:center;margin-bottom:12px;box-shadow:0 6px 20px -6px rgba(0,0,0,.5)}
 .proj-card .pemoji svg{width:22px;height:22px;color:#d8dce8}
-.proj-card h3{font-size:14px;font-weight:600;margin-bottom:4px;word-break:break-word}
+.proj-card h3{font-size:14px;font-weight:600;margin-bottom:4px;word-break:break-word;padding-right:60px}
 .proj-card .meta{font-size:11px;color:#5a6478;line-height:1.6}
-.proj-card .del{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(8,8,10,.8);color:#5a6478;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.proj-card .del:hover{border-color:rgba(239,68,68,.5);color:#fca5a5;background:rgba(239,68,68,.12)}
+.proj-card .proj-actions{position:absolute;top:10px;right:10px;display:flex;gap:4px}
+.proj-card .proj-actions .del{position:static;width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.08);background:rgba(8,8,10,.8);color:#5a6478;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.proj-card:hover .proj-actions .del{border-color:rgba(255,255,255,.2);color:#c9d1e3}
+.proj-card .proj-actions .del:hover{border-color:rgba(239,68,68,.5);color:#fca5a5;background:rgba(239,68,68,.12)}
+.proj-preview{font-size:11px;color:#5a6478;line-height:1.5;margin:8px 0 6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(255,255,255,.1);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .new-proj{border:2px dashed rgba(255,255,255,.1);background:rgba(20,20,24,.3);border-radius:14px;padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:140px;color:#5a6478;transition:all .18s;backdrop-filter:blur(10px)}
 .new-proj:active{transform:scale(.97)}
 .new-proj .plus{font-size:26px}
 .new-proj span{font-size:13px}
 .pv-empty{text-align:center;padding:60px 20px;color:#5a6478;font-size:13px;line-height:1.8}
-
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
-
 #errbar{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(127,29,29,.95);color:#fecaca;padding:10px 16px;font-size:12.5px;font-family:monospace;border-bottom:2px solid #ef4444;backdrop-filter:blur(10px);padding-top:calc(10px + env(safe-area-inset-top))}
 #errbar b{color:#fff}
 #errbar .x{float:right;cursor:pointer;color:#fff;font-weight:700;padding:0 6px}
-
 .model-search{position:relative}
 .model-search input{padding-right:32px}
 .model-search .clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#5a6478;font-size:16px;line-height:1;padding:4px;min-height:24px;display:flex;align-items:center}
 .model-search .clear:active{color:#c9d1e3}
-
-/* 复制菜单 */
-.copy-menu{
-  position:fixed;z-index:99999;display:none;flex-direction:column;
-  background:rgba(20,20,24,.98);backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.12);border-radius:12px;
-  box-shadow:0 20px 50px -12px rgba(0,0,0,.8);
-  padding:6px;min-width:160px;
-}
+.copy-menu{position:fixed;z-index:99999;display:none;flex-direction:column;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 20px 50px -12px rgba(0,0,0,.8);padding:6px;min-width:160px}
 .copy-menu.show{display:flex}
-.copy-menu button{
-  padding:11px 14px;border-radius:8px;border:none;background:transparent;
-  color:#e8ecf4;font-size:13px;font-family:inherit;text-align:left;cursor:pointer;
-  display:flex;align-items:center;gap:10px;min-height:40px;
-}
+.copy-menu button{padding:11px 14px;border-radius:8px;border:none;background:transparent;color:#e8ecf4;font-size:13px;font-family:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:40px}
 .copy-menu button:hover,.copy-menu button:active{background:rgba(150,150,160,.15)}
 .copy-menu button svg{width:15px;height:15px;color:#b0b8c8}
 .copy-menu .hint{margin-left:auto;font-size:10px;color:#5a6478}
-
-/* 模板弹窗 */
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99998;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-mask.show{display:flex}
 .modal{background:rgba(20,20,24,.98);border:1px solid rgba(255,255,255,.12);border-radius:16px;max-width:440px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(0,0,0,.9)}
 .modal-head{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600}
 .modal-head .close{cursor:pointer;color:#5a6478;font-size:20px;padding:4px 8px;border-radius:6px}
 .modal-body{padding:18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;max-height:60vh}
+.modal-body textarea{background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:11px 12px;font-size:13px;font-family:inherit;resize:vertical;-webkit-user-select:text;user-select:text;width:100%}
+.modal-body textarea:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .modal-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;justify-content:flex-end}
 .modal-foot .btn{min-height:40px;padding:10px 20px}
-
-/* 换色板 */
 .color-palette{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;display:none;flex-direction:column;gap:10px;box-shadow:0 20px 50px -12px rgba(0,0,0,.8)}
 .color-palette.show{display:flex}
 .color-palette .title{font-size:12px;color:#8b94a8;font-weight:600}
-.color-palette .row{display:flex;gap:8px}
+.color-palette .row{display:flex;gap:8px;flex-wrap:wrap;max-width:340px}
 .color-swatch{width:44px;height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;position:relative}
 .color-swatch:hover{transform:scale(1.1);border-color:rgba(255,255,255,.4)}
 .color-swatch:active{transform:scale(.95)}
 .color-swatch div{position:absolute;inset:6px;border-radius:6px}
-
-/* 搜索栏 */
 .search-bar{position:absolute;top:0;left:0;right:0;z-index:50;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.1);padding:12px 14px;display:none;gap:8px;align-items:center}
 .search-bar.show{display:flex}
 .search-bar input{flex:1;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;-webkit-user-select:text;user-select:text}
@@ -443,8 +274,6 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
 .search-bar .nav-btn:hover{border-color:rgba(255,255,255,.2);color:#fff}
 .search-bar .nav-btn svg{width:14px;height:14px}
 .search-bar .close{color:#5a6478;font-size:18px;padding:4px 8px;cursor:pointer}
-
-/* 快捷键面板 */
 .kbd-panel{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
 .kbd-panel.show{display:flex}
 .kbd-card{background:rgba(20,20,24,.98);border:1px solid rgba(255,255,255,.12);border-radius:16px;max-width:480px;width:100%;padding:24px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9)}
@@ -454,26 +283,16 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
 .kbd-item{display:flex;align-items:center;gap:10px;font-size:13px;color:#c9d1e3}
 .kbd-item kbd{background:rgba(8,8,10,.8);border:1px solid rgba(255,255,255,.15);border-radius:5px;padding:3px 8px;font-size:11px;font-family:monospace;color:#b0b8c8;min-width:44px;text-align:center}
 .kbd-item span{color:#8b94a8}
-
-/* 通用 */
 .btn-icon{background:transparent;border:none;color:#5a6478;cursor:pointer;padding:6px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
 .btn-icon:hover{background:rgba(255,255,255,.06);color:#c9d1e3}
 .btn-icon svg{width:16px;height:16px}
-
 .mobile-tabs{display:none}
 .mobile-only{display:none}
-
 @media (max-width: 900px), (pointer: coarse) {
   .app{flex-direction:column;height:100%}
   .panel{display:none;height:100%}
   .panel.mobile-active{display:flex;flex:1;width:100%!important;border-right:none;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
-  .mobile-tabs{
-    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;
-    background:rgba(15,15,18,.92);backdrop-filter:blur(24px) saturate(180%);
-    -webkit-backdrop-filter:blur(24px) saturate(180%);
-    border-top:1px solid rgba(255,255,255,.08);
-    padding-bottom:env(safe-area-inset-bottom);height:calc(60px + env(safe-area-inset-bottom));
-  }
+  .mobile-tabs{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,15,18,.92);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom);height:calc(60px + env(safe-area-inset-bottom))}
   .mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:#5a6478;cursor:pointer;font-family:inherit;font-size:10.5px;font-weight:600;transition:all .18s;position:relative;padding:8px 4px;-webkit-tap-highlight-color:transparent}
   .mtab svg{width:22px;height:22px;transition:all .18s}
   .mtab.active{color:#e8ecf4}
@@ -481,7 +300,6 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
   .mtab .badge{position:absolute;top:6px;right:50%;margin-right:-18px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;display:none}
   .mtab .badge.show{display:block}
   .mtab:active{transform:scale(.93)}
-
   .head{padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top))}
   .settings{padding:10px 14px;max-height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .settings.collapsed{max-height:44px;padding-top:8px;padding-bottom:8px}
@@ -492,11 +310,9 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
   .composer{padding:12px 12px calc(12px + env(safe-area-inset-bottom));flex-shrink:0}
   .btn-go{padding:12px 22px;font-size:14px;min-height:48px}
   .btn-cont{padding:12px 16px;font-size:14px;min-height:48px}
-
   .code{padding:8px 10px;gap:6px;min-height:0}
   .tools{gap:4px;padding-bottom:4px}
   .tool{padding:8px 10px;font-size:11.5px;min-height:36px}
-
   .comp-layout{flex-direction:column;gap:6px;flex:1;min-height:0;overflow:hidden}
   .comp-side{width:100%;max-height:none;flex-shrink:0;flex-direction:row;border-radius:10px;height:auto}
   .comp-side-head{writing-mode:initial;width:auto;border-bottom:none;border-right:1px solid rgba(255,255,255,.06);padding:10px;flex-shrink:0}
@@ -506,20 +322,18 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
   .comp-item.active{padding:7px 11px}
   .comp-actions{flex-direction:row;border-top:none;border-left:1px solid rgba(255,255,255,.06);padding:6px;flex-wrap:nowrap;width:auto;flex-shrink:0}
   .comp-actions button{min-width:36px}
-
   .editor-col{flex:1;min-height:0;overflow:hidden}
   .comp-bar{flex-wrap:wrap;min-height:0;padding:0 0 4px}
   .comp-bar input{width:90px;padding:5px 7px;font-size:13px}
   .comp-bar select{padding:5px 7px;font-size:12px}
   .editor-wrap{flex:1;min-height:200px}
   .ta{min-height:200px}
-
   .pv-tools{padding:8px 10px;gap:5px}
   .vp-size{display:none}
   .win-inputs{display:none}
   .pv-wrap{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
   .hist{width:85%;max-width:340px}
-  .pv-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .pv-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
   .pv-head{padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top))}
   .pv-body{padding:16px}
   .pv-toolbar{flex-wrap:wrap}
@@ -565,7 +379,6 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <button class="btn-sm" onclick="openProjects()" title="切换工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>工程</button>
       </div>
     </div>
-
     <div class="settings" id="settings">
       <div class="h" onclick="document.getElementById('settings').classList.toggle('collapsed')">
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>API 配置</span>
@@ -575,9 +388,7 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <div class="field">
           <label>保存的密钥配置</label>
           <div class="row">
-            <select id="keySelect" onchange="switchKeyProfile(this.value)" style="flex:1">
-              <option value="">— 选择配置 —</option>
-            </select>
+            <select id="keySelect" onchange="switchKeyProfile(this.value)" style="flex:1"><option value="">— 选择配置 —</option></select>
             <button class="btn-sm" onclick="newKeyProfile()" title="新建"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
             <button class="btn-sm danger" onclick="deleteKeyProfile()" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
           </div>
@@ -601,27 +412,15 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <div class="hint"><b>提示：</b>Key 只存本机。若真实调用报 CORS 错误，说明该服务不允许浏览器直连，需用带后端的版本。</div>
       </div>
     </div>
-
     <div class="msgs" id="msgs"></div>
     <div class="composer">
       <div class="box">
         <textarea id="prompt" placeholder="描述你想要的页面…&#10;例如：一个深色风格的 SaaS 登录页"></textarea>
         <div class="bar">
-          <label class="modify-toggle" id="modifyToggle">
-            <label class="modify-toggle" id="streamToggle" style="font-size:11px">
-  <input type="checkbox" id="streamMode" checked>
-  <span>流式</span>
-</label>
-<label class="modify-toggle" id="roastToggle" style="font-size:11px">
-  <input type="checkbox" id="roastMode">
-  <span>吐槽</span>
-</label>
-            <input type="checkbox" id="modifyMode" onchange="onModifyToggle(this.checked)">
-            <span>修改现有代码</span>
-          </label>
-          <button class="btn-cont" id="contBtn" onclick="continueGenerate()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>继续
-          </button>
+          <label class="modify-toggle" id="modifyToggle"><input type="checkbox" id="modifyMode" onchange="onModifyToggle(this.checked)"><span>修改代码</span></label>
+          <label class="modify-toggle" style="font-size:11px"><input type="checkbox" id="streamMode" checked><span>流式</span></label>
+          <label class="modify-toggle" style="font-size:11px"><input type="checkbox" id="roastMode"><span>吐槽</span></label>
+          <button class="btn-cont" id="contBtn" onclick="continueGenerate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>继续</button>
           <button class="btn-go" id="genBtn" onclick="generate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>生成</button>
         </div>
       </div>
@@ -630,10 +429,7 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
 
   <main class="panel mid" id="panelCode">
     <div class="head">
-      <div class="title">
-        <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
-        代码 / 组件
-      </div>
+      <div class="title"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>代码 / 组件</div>
       <div style="display:flex;gap:4px">
         <button class="btn-icon" onclick="toggleSearch()" title="搜索 (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
         <button class="tool" onclick="toggleHistory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史</button>
@@ -647,24 +443,23 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
       <span class="close" onclick="toggleSearch()">✕</span>
     </div>
     <div class="hist" id="hist">
-     <div class="hist-head">
-  <span>版本历史</span>
-  <span class="close" onclick="toggleHistory()">✕</span>
-</div>
-<div style="padding:10px 10px 0">
-  <input type="text" id="histSearch" placeholder="搜索历史 prompt…" oninput="filterHistory(this.value)" style="width:100%;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;-webkit-user-select:text;user-select:text">
-</div>
+      <div class="hist-head"><span>版本历史</span><span class="close" onclick="toggleHistory()">✕</span></div>
+      <div style="padding:10px 10px 0">
+        <input type="text" id="histSearch" placeholder="搜索历史 prompt…" oninput="filterHistory(this.value)" style="width:100%;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;-webkit-user-select:text;user-select:text">
+      </div>
+      <div class="hist-list" id="histList"></div>
+    </div>
     <div class="code">
       <div class="tools">
         <button class="tool" id="copyBtn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
         <button class="tool" id="dlBtn" onclick="downloadZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ZIP</button>
-        <button class="tool" id="mergeBtn" onclick="mergeToSingleHtml()" title="把所有组件合并成一个完整 HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>合并</button>
+        <button class="tool" onclick="exportProjectJSON()" title="导出工程为 JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出</button>
+        <button class="tool" onclick="importProjectJSON()" title="从 JSON 导入工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入</button>
+        <button class="tool" onclick="mergeToSingleHtml()" title="合并为单 HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>合并</button>
         <button class="tool" id="fmtBtn" onclick="formatCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>格式化</button>
         <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
-        <button class="tool" onclick="showColorPalette()" title="一键换色板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>换色</button>
+        <button class="tool" onclick="showColorPalette()" title="一键换色板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>换色</button>
         <button class="tool" onclick="showTemplates()" title="Prompt 模板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
-        <button class="tool" onclick="exportProjectJSON()" title="导出工程为 JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出</button>
-<button class="tool" onclick="importProjectJSON()" title="从 JSON 导入工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入</button>
       </div>
       <div class="comp-layout">
         <div class="comp-side">
@@ -679,19 +474,12 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <div class="editor-col">
           <div class="comp-bar">
             <input type="text" id="compName" oninput="renameComponent(this.value)" placeholder="组件名">
-            <select id="compType" onchange="changeComponentType(this.value)">
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="js">JS</option>
-            </select>
+            <select id="compType" onchange="changeComponentType(this.value)"><option value="html">HTML</option><option value="css">CSS</option><option value="js">JS</option></select>
             <span id="compOrder" style="margin-left:auto;color:#5a6478"></span>
             <button class="btn-sm" onclick="moveComponent(-1)" title="上移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
             <button class="btn-sm" onclick="moveComponent(1)" title="下移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
-          <div class="editor-wrap">
-            <div id="editor"></div>
-            <textarea class="ta" id="fallbackTa" style="display:none"></textarea>
-          </div>
+          <div class="editor-wrap"><div id="editor"></div><textarea class="ta" id="fallbackTa" style="display:none"></textarea></div>
         </div>
       </div>
     </div>
@@ -699,10 +487,7 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
 
   <section class="panel right" id="panelPreview">
     <div class="head">
-      <div class="title">
-        <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
-        实时预览
-      </div>
+      <div class="title"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>实时预览</div>
       <button class="tool" onclick="refreshPreview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>刷新</button>
     </div>
     <div class="pv-tools">
@@ -712,12 +497,7 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <button class="vpb" id="vpMobile" onclick="setViewport('mobile')" title="手机"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></button>
       </div>
       <span class="vp-size" id="vpSize">100% · 铺满</span>
-      <div class="win-inputs">
-        <input type="number" id="winW" placeholder="宽" min="180">
-        <span>×</span>
-        <input type="number" id="winH" placeholder="高" min="140">
-        <button class="tool" style="padding:6px 8px" onclick="applyCustomSize()">应用</button>
-      </div>
+      <div class="win-inputs"><input type="number" id="winW" placeholder="宽" min="180"><span>×</span><input type="number" id="winH" placeholder="高" min="140"><button class="tool" style="padding:6px 8px" onclick="applyCustomSize()">应用</button></div>
       <div style="flex:1"></div>
       <button class="tool" onclick="toggleRotate()" title="横竖屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
       <button class="tool" onclick="fillPreview()" title="铺满"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg></button>
@@ -727,117 +507,65 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
       <div class="pv" id="pv">
         <div class="pv-bar"><span class="d dr"></span><span class="d dy"></span><span class="d dg"></span><span class="addr" id="addr">preview://live</span></div>
         <iframe id="preview" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
-        <div class="overlay" id="overlay">
-          <div class="spin"></div>
-          <p id="overlayText">正在生成…</p>
-          <div class="timer" id="timer" style="display:none">已用 <b id="timerNum">0.0</b> 秒</div>
-        </div>
-        <div class="rz n" data-dir="n"></div>
-        <div class="rz s" data-dir="s"></div>
-        <div class="rz e" data-dir="e"></div>
-        <div class="rz w" data-dir="w"></div>
-        <div class="rz nw" data-dir="nw"></div>
-        <div class="rz ne" data-dir="ne"></div>
-        <div class="rz sw" data-dir="sw"></div>
-        <div class="rz se" data-dir="se"></div>
+        <div class="overlay" id="overlay"><div class="spin"></div><p id="overlayText">正在生成…</p><div class="timer" id="timer" style="display:none">已用 <b id="timerNum">0.0</b> 秒</div></div>
+        <div class="rz n" data-dir="n"></div><div class="rz s" data-dir="s"></div><div class="rz e" data-dir="e"></div><div class="rz w" data-dir="w"></div>
+        <div class="rz nw" data-dir="nw"></div><div class="rz ne" data-dir="ne"></div><div class="rz sw" data-dir="sw"></div><div class="rz se" data-dir="se"></div>
       </div>
     </div>
   </section>
 </div>
 
 <div class="mobile-tabs" id="mobileTabs">
-  <button class="mtab active" data-tab="chat" onclick="switchMobileTab('chat')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span>对话</span>
-    <span class="badge" id="chatBadge"></span>
-  </button>
-  <button class="mtab" data-tab="code" onclick="switchMobileTab('code')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-    <span>代码</span>
-  </button>
-  <button class="mtab" data-tab="preview" onclick="switchMobileTab('preview')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    <span>预览</span>
-  </button>
+  <button class="mtab active" data-tab="chat" onclick="switchMobileTab('chat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>对话</span><span class="badge" id="chatBadge"></span></button>
+  <button class="mtab" data-tab="code" onclick="switchMobileTab('code')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>代码</span></button>
+  <button class="mtab" data-tab="preview" onclick="switchMobileTab('preview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>预览</span></button>
 </div>
 
-<!-- 长按菜单 -->
 <div class="copy-menu" id="copyMenu">
-  <button onclick="doCopy()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制<span class="hint">Ctrl+C</span></button>
-  <button onclick="doCut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>剪切<span class="hint">Ctrl+X</span></button>
-  <button onclick="doPaste()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>粘贴<span class="hint">Ctrl+V</span></button>
-  <button onclick="doSelectAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 7 4"/><polyline points="20 7 20 4 17 4"/><polyline points="4 17 4 20 7 20"/><polyline points="20 17 20 20 17 20"/><path d="M9 4h6M9 20h6M4 9v6M20 9v6"/></svg>全选<span class="hint">Ctrl+A</span></button>
+  <button onclick="doCopy()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
+  <button onclick="doCut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>剪切</button>
+  <button onclick="doPaste()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>粘贴</button>
+  <button onclick="doSelectAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 7 4"/><polyline points="20 7 20 4 17 4"/><polyline points="4 17 4 20 7 20"/><polyline points="20 17 20 20 17 20"/><path d="M9 4h6M9 20h6M4 9v6M20 9v6"/></svg>全选</button>
 </div>
 
-  <!-- 重命名工程弹窗 -->
-<div class="modal-mask" id="renameProjectModal">
+<div class="modal-mask" id="templateModal">
   <div class="modal">
-    <div class="modal-head"><span>重命名工程</span><span class="close" onclick="closeRenameProject()">✕</span></div>
-    <div class="modal-body">
-      <div class="field"><label>工程名称</label><input type="text" id="renameProjectInput" placeholder="输入新名称"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn" onclick="closeRenameProject()">取消</button>
-      <button class="btn" onclick="doRenameProject()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">保存</button>
-    </div>
+    <div class="modal-head"><span>Prompt 模板</span><div style="display:flex;gap:8px;align-items:center"><button class="btn-sm" onclick="createNewTemplate()" style="padding:6px 10px;font-size:11.5px">＋ 新建</button><span class="close" onclick="closeTemplates()">✕</span></div></div>
+    <div class="modal-body" id="templateList"></div>
   </div>
 </div>
 
-<!-- 编辑模板弹窗 -->
+<div class="modal-mask" id="templateFormModal">
+  <div class="modal">
+    <div class="modal-head"><span id="templateFormTitle">填写变量</span><span class="close" onclick="closeTemplateForm()">✕</span></div>
+    <div class="modal-body" id="templateFormBody"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeTemplateForm()">取消</button><button class="btn" onclick="applyTemplate()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">生成</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="renameProjectModal">
+  <div class="modal">
+    <div class="modal-head"><span>重命名工程</span><span class="close" onclick="closeRenameProject()">✕</span></div>
+    <div class="modal-body"><div class="field"><label>工程名称</label><input type="text" id="renameProjectInput" placeholder="输入新名称"></div></div>
+    <div class="modal-foot"><button class="btn" onclick="closeRenameProject()">取消</button><button class="btn" onclick="doRenameProject()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">保存</button></div>
+  </div>
+</div>
+
 <div class="modal-mask" id="editTemplateModal">
   <div class="modal">
     <div class="modal-head"><span id="editTemplateTitle">编辑模板</span><span class="close" onclick="closeEditTemplate()">✕</span></div>
     <div class="modal-body">
       <div class="field"><label>模板名称</label><input type="text" id="editTemplateName" placeholder="如：博客首页"></div>
-      <div class="field"><label>Prompt 内容（用 {变量名} 表示变量）</label><textarea id="editTemplatePrompt" style="min-height:100px;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:11px 12px;font-size:13px;font-family:inherit;resize:vertical;-webkit-user-select:text;user-select:text"></textarea></div>
-      <div class="field"><label>变量列表（每行一个：变量名|标签|默认值）</label><textarea id="editTemplateVars" style="min-height:80px;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:11px 12px;font-size:12px;font-family:Consolas,monospace;resize:vertical;-webkit-user-select:text;user-select:text" placeholder="color|主题色|紫色&#10;dark|风格|深色"></textarea></div>
+      <div class="field"><label>Prompt 内容（用 {变量名} 表示变量）</label><textarea id="editTemplatePrompt" style="min-height:100px"></textarea></div>
+      <div class="field"><label>变量列表（每行一个：变量名|标签|默认值）</label><textarea id="editTemplateVars" style="min-height:80px;font-family:Consolas,monospace;font-size:12px" placeholder="color|主题色|紫色&#10;dark|风格|深色"></textarea></div>
     </div>
-    <div class="modal-foot">
-      <button class="btn" onclick="closeEditTemplate()">取消</button>
-      <button class="btn" onclick="saveEditTemplate()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">保存</button>
-    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeEditTemplate()">取消</button><button class="btn" onclick="saveEditTemplate()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">保存</button></div>
   </div>
 </div>
 
-<!-- 模板弹窗 -->
-<div class="modal-mask" id="templateModal">
-  <div class="modal">
-    <div class="modal-head">
-  <span>Prompt 模板</span>
-  <div style="display:flex;gap:8px;align-items:center">
-    <button class="btn-sm" onclick="createNewTemplate()" style="padding:6px 10px;font-size:11.5px">＋ 新建</button>
-    <span class="close" onclick="closeTemplates()">✕</span>
-  </div>
-</div>
-    <div class="modal-body" id="templateList"></div>
-  </div>
-</div>
+<div class="color-palette" id="colorPalette"><div class="title">选择色板</div><div class="row" id="colorPaletteRow"></div></div>
 
-<!-- 变量填空弹窗 -->
-<div class="modal-mask" id="templateFormModal">
-  <div class="modal">
-    <div class="modal-head"><span id="templateFormTitle">填写变量</span><span class="close" onclick="closeTemplateForm()">✕</span></div>
-    <div class="modal-body" id="templateFormBody"></div>
-    <div class="modal-foot">
-      <button class="btn" onclick="closeTemplateForm()">取消</button>
-      <button class="btn" onclick="applyTemplate()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">生成</button>
-    </div>
-  </div>
-</div>
-
-<!-- 色板弹窗 -->
-<div class="color-palette" id="colorPalette">
-  <div class="title">选择色板</div>
-  <div class="row" id="colorPaletteRow"></div>
-</div>
-
-<!-- 快捷键面板 -->
-<div class="kbd-panel" id="kbdPanel" onclick="if(event.target===this)closeKbdPanel()">
-  <div class="kbd-card">
-    <h3>快捷键<span class="close" onclick="closeKbdPanel()">✕</span></h3>
-    <div class="kbd-grid" id="kbdGrid"></div>
-  </div>
-</div>
+<div class="kbd-panel" id="kbdPanel" onclick="if(event.target===this)closeKbdPanel()"><div class="kbd-card"><h3>快捷键<span class="close" onclick="closeKbdPanel()">✕</span></h3><div class="kbd-grid" id="kbdGrid"></div></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
