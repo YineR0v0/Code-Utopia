@@ -1558,21 +1558,28 @@ var rotated = false;
 function applyViewport(){
   var d = DEVICES[currentDevice];
   var pv = $('pv');
-  var wrapW = $('pvWrap').clientWidth - 20;
-  var wrapH = $('pvWrap').clientHeight - 20;
+  var wrapW = $('pvWrap').clientWidth - 24;
+  var wrapH = $('pvWrap').clientHeight - 24;
   pv.classList.remove('nosmooth');
   var w = manualSize ? manualSize.w : (d.w ? (rotated ? d.h : d.w) : null);
   var h = manualSize ? manualSize.h : (d.h ? (rotated ? d.w : d.h) : null);
   if(w){
+    pv.style.flex = 'none';
     pv.style.width = Math.min(w, wrapW) + 'px';
     pv.style.height = h ? Math.min(h, wrapH) + 'px' : '';
-    pv.style.maxWidth = '100%'; pv.style.maxHeight = '100%';
+    pv.style.maxWidth = '100%';
+    pv.style.maxHeight = '100%';
+    pv.style.minHeight = '140px';
     pv.classList.add('pv-frame');
     $('vpSize').textContent = Math.round(w) + ' × ' + (h ? Math.round(h) : 'auto');
     $('addr').textContent = rotated ? d.addr + ' (landscape)' : d.addr;
   } else {
-    pv.style.width = '100%'; pv.style.height = '';
-    pv.style.maxWidth = '100%'; pv.style.maxHeight = '';
+    pv.style.flex = '1';
+    pv.style.width = '100%';
+    pv.style.height = '';
+    pv.style.maxWidth = '100%';
+    pv.style.maxHeight = '';
+    pv.style.minHeight = '';
     pv.classList.remove('pv-frame');
     $('vpSize').textContent = d.label;
     $('addr').textContent = d.addr;
