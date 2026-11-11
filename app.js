@@ -25,7 +25,13 @@ var state = {
   inspectorTarget: null,
   inspectorStyles: {},
   dragSrcIdx: -1,
-  dragOverIdx: -1
+  dragOverIdx: -1,
+  attachedFiles: [],
+  favorites: [],
+  galleryTab: 'history',
+  _lastEditorUpdate: 0,
+  _lastPreviewUpdate: 0,
+  _streamingComp: false
 };
 
 function $(id){ return document.getElementById(id); }
@@ -261,6 +267,7 @@ function loadProjects(){
   for(var i = 0; i < state.projects.length; i++){
     if(!state.projects[i].messages) state.projects[i].messages = [];
     if(!state.projects[i].history) state.projects[i].history = [];
+    if(!state.projects[i].favorites) state.projects[i].favorites = [];
     if(!state.projects[i].gallery) state.projects[i].gallery = [];
   }
   saveProjects();
@@ -272,6 +279,7 @@ function newProjectData(name){
     components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
     history: [], historyIndex: -1,
     messages: [],
+    favorites: [],
     gallery: []
   };
 }
@@ -309,6 +317,7 @@ function renderProjects(){
     var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
     var preview = getProjectPreviewText(p);
     var msgCount = (p.messages || []).length;
+    var favCount = (p.favorites || []).length;
     html += '<div class="proj-card' + active + '" onclick="switchProject(\'' + p.id + '\')">' +
       '<div class="proj-actions">' +
         '<button class="del" onclick="event.stopPropagation();openRenameProject(\'' + p.id + '\')" title="重命名">✎</button>' +
@@ -317,7 +326,7 @@ function renderProjects(){
       '<div class="pemoji">' + projIconSvg + '</div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<div class="proj-preview">' + esc(preview) + '</div>' +
-      '<div class="meta">' + (p.components || []).length + ' 个组件 · ' + (p.history || []).length + ' 个版本 · ' + msgCount + ' 条对话<br>' + time + '</div>' +
+      '<div class="meta">' + (p.components || []).length + ' 组件 · ' + (p.history || []).length + ' 版本 · ' + favCount + ' 收藏 · ' + msgCount + ' 对话<br>' + time + '</div>' +
       '</div>';
   }
   html += '<div class="new-proj" onclick="createProject()"><div class="plus">＋</div><span>新建工程</span></div>';
@@ -527,6 +536,7 @@ function switchKeyProfile(idx){
   setConn('', '已切换配置');
   updateMode();
   renderKeySelect();
+  try{ renderAttachments(); }catch(e){}
 }
 function newKeyProfile(){
   state.keyProfiles.push({ name: '新配置', baseUrl: 'https://api.deepseek.com/v1', apiKey: '', model: '' });
@@ -966,8 +976,7 @@ function searchKeydown(e){
   else if(e.key === 'Escape'){ toggleSearch(); }
 }
 function clearSearchHighlight(){ $('searchCount').textContent = '0/0'; state.searchResults = []; }
-
-/* ================= 截图 & 复制成图片 ================= */
+/* ================= 截图 ================= */
 function takeScreenshot(){
   var iframe = $('preview');
   if(!iframe) return;
@@ -1081,14 +1090,8 @@ function inspectorClickHandler(e){
   var html = el.outerHTML.slice(0, 500);
   var body = $('inspectorBody');
   state.inspectorStyles = {
-    color: cs.color,
-    backgroundColor: cs.backgroundColor,
-    fontSize: cs.fontSize,
-    fontWeight: cs.fontWeight,
-    padding: cs.padding,
-    margin: cs.margin,
-    borderRadius: cs.borderRadius,
-    display: cs.display
+    color: cs.color, backgroundColor: cs.backgroundColor, fontSize: cs.fontSize, fontWeight: cs.fontWeight,
+    padding: cs.padding, margin: cs.margin, borderRadius: cs.borderRadius, display: cs.display
   };
   body.innerHTML =
     '<div class="inspector-prop"><label>标签 / ID / Class</label><code>' + esc(el.tagName.toLowerCase()) + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/).join('.') : '') + '</code></div>' +
@@ -1129,8 +1132,6 @@ function applyInspectorChanges(){
   if(pad) el.style.padding = pad;
   if(mar) el.style.margin = mar;
   if(br) el.style.borderRadius = br;
-  var inlineStyle = el.getAttribute('style') || '';
-  // 同步回代码：只同步当前活动组件的 inline style 部分，简单起见提示手动同步
   addMsg('assistant', '✅ 已应用修改到预览。', '提示：这只改了预览里的样式，要写回代码请告诉我"把刚才的样式写回代码"');
 }
 
@@ -1174,9 +1175,7 @@ function applyStylePreset(preset){
   if(isMobile()) switchMobileTab('preview');
 
   var body = {
-    model: $('model').value,
-    temperature: 0.6,
-    stream: false,
+    model: $('model').value, temperature: 0.6, stream: false,
     messages: [
       { role: 'system', content: '你是前端设计师。用户给你一份现有页面代码，你要把它改成指定的设计风格，保留所有功能和内容，只改视觉。返回完整 HTML，不要 markdown。' },
       { role: 'user', content: '请把下面的页面改成【' + preset.prompt + '】风格，保留所有功能和文字内容：\n\n' + current }
@@ -1193,122 +1192,14 @@ function applyStylePreset(preset){
     if(data.usage && data.usage.total_tokens) recordUsage(data.usage.total_tokens, $('model').value);
     applyGenerated(txt, '改风格：' + preset.label, false);
   })
-  .catch(function(e){
-    addMsg('assistant', '改风格失败：' + e.message, '');
-  })
+  .catch(function(e){ addMsg('assistant', '改风格失败：' + e.message, ''); })
   .then(function(){
     stopTimer();
     state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
   });
 }
-
-/* ================= 暗黑/浅色一键切换 ================= */
-function toggleDarkMode(){
-  if(state.components.length === 0){ alert('还没有内容'); return; }
-  var current = buildPreviewHtml();
-  if(!$('apiKey').value.trim() || !state.connected || !$('model').value){
-    // 无 API 时做简单的颜色反转
-    var reversed = invertColors(current);
-    applyGenerated(reversed, '颜色反转', false);
-    return;
-  }
-  addMsg('user', '切换明暗模式', '');
-  state.loading = true;
-  $('genBtn').disabled = true;
-  $('overlay').classList.add('show');
-  $('overlayText').textContent = '正在切换明暗…';
-  startTimer();
-  var isDark = /background(-color)?\s*:\s*(#0|#1|#2|black|rgb\(0)/i.test(current);
-  var target = isDark ? '浅色（白色背景，深色文字）' : '深色（黑色背景，浅色文字）';
-  var body = {
-    model: $('model').value, temperature: 0.5, stream: false,
-    messages: [
-      { role: 'system', content: '你是前端设计师。把用户的页面切换到' + target + '主题，保留所有功能，只改配色。返回完整 HTML，不要 markdown。' },
-      { role: 'user', content: current }
-    ]
-  };
-  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
-    body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); })
-  .then(function(data){
-    var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-    txt = txt.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
-    applyGenerated(txt, '切换明暗', false);
-  })
-  .catch(function(e){ addMsg('assistant', '切换失败：' + e.message); })
-  .then(function(){
-    stopTimer();
-    state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
-  });
-}
-function invertColors(html){
-  return html.replace(/#([0-9a-f]{6}|[0-9a-f]{3})/gi, function(m, hex){
-    if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
-    var r = 255 - parseInt(hex.substr(0,2),16);
-    var g = 255 - parseInt(hex.substr(2,2),16);
-    var b = 255 - parseInt(hex.substr(4,2),16);
-    return '#' + [r,g,b].map(function(x){ var h = x.toString(16); return h.length===1?'0'+h:h; }).join('');
-  });
-}
-
-/* ================= 作品墙 ================= */
-function openGallery(){
-  renderGallery();
-  $('gallery').classList.add('show');
-}
-function closeGallery(){ $('gallery').classList.remove('show'); }
-function renderGallery(){
-  var p = getActiveProject();
-  var grid = $('galleryGrid');
-  if(!p || !p.history || p.history.length === 0){
-    grid.innerHTML = '<div class="pv-empty" style="grid-column:1/-1">还没有作品。生成几次后历史版本会自动出现在这里。</div>';
-    return;
-  }
-  var html = '';
-  for(var i = p.history.length - 1; i >= 0; i--){
-    var item = p.history[i];
-    var d = new Date(item.time);
-    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
-    html += '<div class="gallery-card" onclick="restoreFromGallery(' + i + ')">' +
-      '<div class="thumb" data-hidx="' + i + '"></div>' +
-      '<div class="info"><b>v' + item.version + '</b><span>' + esc((item.prompt || '').slice(0, 50)) + '<br>' + time + '</span></div>' +
-      '</div>';
-  }
-  grid.innerHTML = html;
-  // 渲染缩略图
-  setTimeout(function(){
-    var cards = grid.querySelectorAll('.thumb');
-    for(var k = 0; k < cards.length; k++){
-      var idx = parseInt(cards[k].getAttribute('data-hidx'), 10);
-      var item = p.history[idx];
-      if(!item) continue;
-      var comps = item.components || [];
-      var hp = '', cp = '', jp = '';
-      for(var j = 0; j < comps.length; j++){
-        var c = comps[j];
-        if(c.type === 'html') hp += c.code;
-        else if(c.type === 'css') cp += c.code;
-        else if(c.type === 'js') jp += c.code;
-      }
-      var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + cp + '</style></head><body>' + hp + '<script>' + jp + '<' + '/script></body></html>';
-      var iframe = document.createElement('iframe');
-      iframe.sandbox = 'allow-scripts';
-      iframe.srcdoc = doc;
-      cards[k].appendChild(iframe);
-    }
-  }, 50);
-}
-function restoreFromGallery(i){
-  var p = getActiveProject();
-  if(!p || !p.history[i]) return;
-  closeGallery();
-  restoreHistory(i);
-}
-
-/* ================= 风格条初始化 ================= */
 function initStyleBarSafely(){ try{ initStyleBar(); }catch(e){ console.error(e); } }
+
 /* ================= 换色板 ================= */
 var COLOR_PALETTES = [
   { name: '深空黑', primary: '#0a0a0f', secondary: '#1a1a24', accent: '#6d5cff', text: '#e8ecf4' },
@@ -1551,6 +1442,7 @@ function testConnection(){
         state.keyProfiles[state.activeProfile].model = state.currentModel;
         saveKeyProfiles();
       }
+      try{ renderAttachments(); }catch(e){}
     })
     .catch(function(e){
       state.connected = false;
@@ -1643,6 +1535,7 @@ function importProjectJSON(){
         p.updatedAt = Date.now();
         if(!p.messages) p.messages = [];
         if(!p.history) p.history = [];
+        if(!p.favorites) p.favorites = [];
         if(!p.gallery) p.gallery = [];
         state.projects.push(p);
         state.activeProjectId = p.id;
@@ -1657,10 +1550,196 @@ function importProjectJSON(){
   input.click();
 }
 
+/* ================= 文件上传 ================= */
+function handleFileUpload(e){
+  var files = e.target.files;
+  if(!files || files.length === 0) return;
+  for(var i = 0; i < files.length; i++){
+    (function(file){
+      var kind = file.type.indexOf('image/') === 0 ? 'image' : 'text';
+      if(kind === 'text' && !/\.(txt|md|html|css|js|json)$/i.test(file.name)){
+        addMsg('assistant', '⚠️ 不支持的文件：' + file.name, '只支持图片和 .txt/.md/.html/.css/.js/.json');
+        return;
+      }
+      if(file.size > 5 * 1024 * 1024){
+        addMsg('assistant', '⚠️ 文件太大（' + (file.size/1024/1024).toFixed(1) + 'MB）：' + file.name, '最大 5MB');
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        var content = ev.target.result;
+        state.attachedFiles.push({ name: file.name, kind: kind, content: content, size: file.size });
+        renderAttachments();
+      };
+      if(kind === 'image') reader.readAsDataURL(file);
+      else reader.readAsText(file);
+    })(files[i]);
+  }
+  e.target.value = '';
+}
+function renderAttachments(){
+  var bar = $('attachBar');
+  if(!bar) return;
+  if(state.attachedFiles.length === 0){ bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = '';
+  var isVisionModel = /vision|vl-|4o|gemini|claude-3|pixtral|llava/i.test($('model').value || '');
+  var hasImage = false;
+  for(var i = 0; i < state.attachedFiles.length; i++){
+    var f = state.attachedFiles[i];
+    if(f.kind === 'image') hasImage = true;
+    var item = document.createElement('div');
+    item.className = 'attach-item';
+    var preview = f.kind === 'image' ? '<img src="' + f.content + '" alt="">' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#8b94a8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    item.innerHTML = preview + '<span class="name">' + esc(f.name) + '</span><span class="rm" onclick="removeAttachment(' + i + ')">✕</span>';
+    bar.appendChild(item);
+  }
+  if(hasImage && !isVisionModel){
+    var warn = document.createElement('div');
+    warn.className = 'attach-warn';
+    warn.style.width = '100%';
+    warn.textContent = '⚠️ 当前模型「' + ($('model').value || '未选') + '」可能不支持看图，图片可能被忽略';
+    bar.appendChild(warn);
+  }
+}
+function removeAttachment(i){
+  state.attachedFiles.splice(i, 1);
+  renderAttachments();
+}
+function clearAttachments(){
+  state.attachedFiles = [];
+  renderAttachments();
+}
+
+/* ================= 作品墙（历史/收藏） ================= */
+function openGallery(){ state.galleryTab = 'history'; renderGallery(); $('gallery').classList.add('show'); }
+function openFavorites(){ state.galleryTab = 'fav'; renderGallery(); $('gallery').classList.add('show'); }
+function closeGallery(){ $('gallery').classList.remove('show'); }
+function switchGalleryTab(tab){ state.galleryTab = tab; renderGallery(); }
+function renderGallery(){
+  var p = getActiveProject();
+  var grid = $('galleryGrid');
+  var tabH = $('galTabHistory');
+  var tabF = $('galTabFav');
+  if(tabH) tabH.classList.toggle('ok', state.galleryTab === 'history');
+  if(tabF) tabF.classList.toggle('ok', state.galleryTab === 'fav');
+
+  var list = [];
+  if(state.galleryTab === 'history'){
+    if(p && p.history) list = p.history.map(function(item, idx){ return { item: item, idx: idx, fav: false }; }).reverse();
+  } else {
+    if(p && p.favorites){
+      list = p.favorites.map(function(fav){ return { item: fav, idx: fav.historyIdx, fav: true }; }).reverse();
+    }
+  }
+
+  if(list.length === 0){
+    grid.innerHTML = '<div class="pv-empty" style="grid-column:1/-1">' + (state.galleryTab === 'history' ? '还没有历史版本。生成几次后自动出现。' : '还没有收藏。代码区点「收藏」把满意的版本存起来。') + '</div>';
+    return;
+  }
+
+  var html = '';
+  for(var i = 0; i < list.length; i++){
+    var entry = list[i];
+    var item = entry.item;
+    var d = new Date(item.time);
+    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    var favMark = entry.fav ? '<span style="color:#fcd34d;margin-right:4px">★</span>' : '';
+    var actions = entry.fav
+      ? '<button class="tool danger" style="padding:4px 8px;font-size:10.5px" onclick="event.stopPropagation();removeFavorite(' + i + ')">取消</button>'
+      : '<button class="tool" style="padding:4px 8px;font-size:10.5px" onclick="event.stopPropagation();addHistoryToFavorites(' + entry.idx + ')">收藏</button>';
+    html += '<div class="gallery-card">' +
+      '<div class="thumb" data-hidx="' + i + '"></div>' +
+      '<div class="info" style="display:flex;align-items:flex-start;gap:6px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<b>' + favMark + 'v' + item.version + '</b>' +
+          '<span>' + esc((item.prompt || '').slice(0, 50)) + '<br>' + time + '</span>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px">' +
+          '<button class="tool" style="padding:4px 8px;font-size:10.5px" onclick="event.stopPropagation();' + (entry.fav ? 'restoreFromFavorites(' + i + ')' : 'restoreFromGallery(' + entry.idx + ')') + '">恢复</button>' +
+          actions +
+        '</div>' +
+      '</div>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+
+  setTimeout(function(){
+    var cards = grid.querySelectorAll('.thumb');
+    for(var k = 0; k < cards.length; k++){
+      var entry = list[k];
+      if(!entry) continue;
+      var comps = entry.item.components || [];
+      var hp = '', cp = '', jp = '';
+      for(var j = 0; j < comps.length; j++){
+        var c = comps[j];
+        if(!c.enabled) continue;
+        if(c.type === 'html') hp += c.code;
+        else if(c.type === 'css') cp += c.code;
+        else if(c.type === 'js') jp += c.code;
+      }
+      var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + cp + '</style></head><body>' + hp + '<script>' + jp + '<' + '/script></body></html>';
+      var iframe = document.createElement('iframe');
+      iframe.sandbox = 'allow-scripts';
+      iframe.srcdoc = doc;
+      cards[k].appendChild(iframe);
+    }
+  }, 50);
+}
+function addCurrentToFavorites(){
+  var p = getActiveProject(); if(!p) return;
+  var cur = state.components[state.activeComp];
+  if(cur && state.editorReady) cur.code = getEditorValue();
+  var comps = state.components.map(function(c){ return { name: c.name, type: c.type, code: c.code, enabled: c.enabled }; });
+  if(comps.length === 0 || !comps.some(function(c){ return c.code && c.code.trim(); })){ alert('当前没有可收藏的内容'); return; }
+  if(!p.favorites) p.favorites = [];
+  p.favorites.push({ version: p.favorites.length + 1, prompt: '⭐ 手动收藏', components: comps, time: Date.now(), historyIdx: state.historyIndex });
+  saveProjects();
+  addMsg('assistant', '⭐ 已加入收藏。', '在作品墙「收藏」里可以查看');
+}
+function addHistoryToFavorites(histIdx){
+  var p = getActiveProject(); if(!p) return;
+  var item = p.history[histIdx]; if(!item) return;
+  if(!p.favorites) p.favorites = [];
+  if(p.favorites.some(function(f){ return f.time === item.time; })){ addMsg('assistant', '这个版本已经收藏过了。'); return; }
+  p.favorites.push({ version: item.version, prompt: item.prompt, components: JSON.parse(JSON.stringify(item.components || [])), time: item.time, historyIdx: histIdx });
+  saveProjects();
+  renderGallery();
+  addMsg('assistant', '⭐ 已收藏 v' + item.version);
+}
+function removeFavorite(favIdx){
+  var p = getActiveProject(); if(!p || !p.favorites) return;
+  p.favorites.splice(favIdx, 1);
+  saveProjects();
+  renderGallery();
+}
+function restoreFromGallery(i){
+  var p = getActiveProject();
+  if(!p || !p.history[i]) return;
+  closeGallery();
+  restoreHistory(i);
+}
+function restoreFromFavorites(i){
+  var p = getActiveProject();
+  if(!p || !p.favorites[i]) return;
+  var item = p.favorites[i];
+  closeGallery();
+  state.components = [];
+  for(var k = 0; k < (item.components || []).length; k++){
+    var c = item.components[k];
+    state.components.push({ name: c.name, type: c.type, code: c.code, enabled: c.enabled !== false });
+  }
+  state.activeComp = 0;
+  setEditorValue(getActiveCompCode(), compLang(state.components[0]));
+  renderComponents();
+  refreshPreview();
+  addMsg('assistant', '已从收藏恢复。', item.prompt || '');
+}
+
 /* ================= 生成 ================= */
 function generate(){
   var p = $('prompt').value.trim();
-  if(!p || state.loading) return;
+  if((!p && state.attachedFiles.length === 0) || state.loading) return;
   if(!state.started){ $('msgs').innerHTML = ''; state.started = true; }
 
   var isModify = state.modifyMode;
@@ -1668,19 +1747,44 @@ function generate(){
   var hasCode = ctx && ctx.html;
   var useStream = $('streamMode') ? $('streamMode').checked : true;
   var doRoast = $('roastMode') ? $('roastMode').checked : false;
+  var files = state.attachedFiles.slice();
 
-  addMsg('user', p, isModify ? (hasCode ? '基于当前代码修改' : '修改模式（当前代码为空）') : '');
+  var attachInfo = files.length > 0 ? ' · 附件 ' + files.length + ' 个' : '';
+  addMsg('user', p || '(仅附件)', isModify ? (hasCode ? '基于当前代码修改' : '修改模式') + attachInfo : (attachInfo || ''));
   $('prompt').value = '';
+  clearAttachments();
   state.loading = true;
   $('genBtn').disabled = true;
   showContinueBtn(false);
   $('overlay').classList.add('show');
   $('overlayText').textContent = isModify ? '正在理解现有代码…' : '正在思考页面结构…';
   startTimer();
-
   if(isMobile()) switchMobileTab('preview');
 
   var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
+  var modelName = $('model').value || '';
+  var isVisionModel = /vision|vl-|4o|gemini|claude-3|pixtral|llava/i.test(modelName);
+
+  var textContent = p;
+  var textFiles = files.filter(function(f){ return f.kind === 'text'; });
+  var imageFiles = files.filter(function(f){ return f.kind === 'image'; });
+  if(textFiles.length > 0){
+    for(var i = 0; i < textFiles.length; i++){
+      textContent += '\n\n=== 附件：' + textFiles[i].name + ' ===\n' + textFiles[i].content + '\n=== 结束 ===';
+    }
+  }
+  var userContent;
+  if(imageFiles.length > 0 && isVisionModel){
+    userContent = [];
+    if(textContent) userContent.push({ type: 'text', text: textContent });
+    for(var i = 0; i < imageFiles.length; i++){
+      userContent.push({ type: 'image_url', image_url: { url: imageFiles[i].content } });
+    }
+  } else if(imageFiles.length > 0 && !isVisionModel){
+    userContent = textContent || '（用户上传了图片但当前模型不支持看图）';
+  } else {
+    userContent = textContent;
+  }
 
   if(useReal){
     state.abort = new AbortController();
@@ -1689,24 +1793,27 @@ function generate(){
     var systemPrompt = (isModify && hasCode) ? buildModifySystemPrompt(ctx)
       : '你是前端代码生成器。用户用自然语言描述页面，你只返回一个完整 HTML 文件（含 style 和 script），可用 CDN 引入 Tailwind。不要 markdown 代码块，不要解释，直接以 <!DOCTYPE html> 开头。页面要美观、现代、响应式。';
     var body = {
-      model: $('model').value,
-      temperature: (isModify && hasCode) ? 0.4 : 0.7,
-      stream: useStream,
-      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.filter(function(m){ return m.role === 'user' || m.role === 'assistant'; }).slice(-10).map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
+      model: $('model').value, temperature: (isModify && hasCode) ? 0.4 : 0.7, stream: useStream,
+      messages: [{ role: 'system', content: systemPrompt }]
+        .concat(state.messages.filter(function(m){ return (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string'; }).slice(-8).map(function(m){ return { role: m.role, content: m.content }; }))
+        .concat([{ role: 'user', content: userContent }])
     };
+    state._streamingComp = false;
+    state._lastEditorUpdate = 0;
+    state._lastPreviewUpdate = 0;
+
     if(!useStream){
       fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
         body: JSON.stringify(body)
       })
-      .then(function(resp){ if(!resp.ok) throw new Error('API ' + resp.status); return resp.json(); })
+      .then(function(resp){ if(!resp.ok) return resp.text().then(function(t){ throw new Error('API ' + resp.status + ': ' + t.slice(0, 200)); }); return resp.json(); })
       .then(function(data){
         full = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
         full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
         if(data.usage && data.usage.total_tokens) recordUsage(data.usage.total_tokens, $('model').value);
         state.lastRawOutput = full;
-        applyGenerated(full, p, isModify);
+        applyGenerated(full, p || '附件生成', isModify);
         if(doRoast) getRoast(full, function(roast){ addMsg('assistant', '💬 ' + roast, ''); });
       })
       .catch(function(e){ addMsg('assistant', '生成失败：' + e.message); })
@@ -1718,12 +1825,11 @@ function generate(){
       });
     } else {
       fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
         body: JSON.stringify(body), signal: state.abort.signal
       })
       .then(function(resp){
-        if(!resp.ok) throw new Error('API ' + resp.status);
+        if(!resp.ok) return resp.text().then(function(t){ throw new Error('API ' + resp.status + ': ' + t.slice(0, 200)); });
         var reader = resp.body.getReader();
         var dec = new TextDecoder();
         var buf = '';
@@ -1733,7 +1839,8 @@ function generate(){
               full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
               state.lastRawOutput = full;
               recordUsage(Math.round(full.length / 4), $('model').value);
-              applyGenerated(full, p, isModify);
+              state._streamingComp = false;
+              applyGenerated(full, p || '附件生成', isModify);
               if(doRoast) getRoast(full, function(roast){ addMsg('assistant', '💬 ' + roast, ''); });
               return;
             }
@@ -1747,7 +1854,26 @@ function generate(){
               try{
                 var j = JSON.parse(d);
                 var dd = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
-                if(dd){ full += dd; }
+                if(dd){
+                  full += dd;
+                  var now = Date.now();
+                  if(now - state._lastEditorUpdate > 200){
+                    state._lastEditorUpdate = now;
+                    var clean = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
+                    if(!state._streamingComp){
+                      state.components = [{ name: '生成中…', type: 'html', code: '', enabled: true }];
+                      state.activeComp = 0;
+                      state._streamingComp = true;
+                      renderComponents();
+                    }
+                    state.components[0].code = clean;
+                    setEditorValue(clean, 'html');
+                    if(now - state._lastPreviewUpdate > 1200){
+                      state._lastPreviewUpdate = now;
+                      refreshPreview();
+                    }
+                  }
+                }
               }catch(e){}
             }
             return pump();
@@ -1778,13 +1904,13 @@ function generate(){
       return;
     }
     $('overlayText').textContent = '正在渲染页面…';
-    var demo = pickDemo(p);
+    var demo = pickDemo(p || '登录页');
     var chunks = demo.match(/[\s\S]{1,60}/g) || [demo];
     var idx = 0, fullDemo = '';
     function next(){
       if(idx >= chunks.length){
         state.lastRawOutput = fullDemo;
-        applyGenerated(fullDemo, p, false);
+        applyGenerated(fullDemo, p || '演示', false);
         if(doRoast) addMsg('assistant', '💬 这配色是调色盘摔了吗？但至少能跑。', '');
         stopTimer();
         state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
@@ -1821,8 +1947,7 @@ function continueGenerate(){
     '如果原代码已经接近完整，只补全缺失的闭合标签即可。',
     '不要任何解释文字，不要 markdown 代码块，直接输出后续代码。',
     '',
-    '【已生成的代码】',
-    currentCode,
+    '【已生成的代码】', currentCode,
     '--- 代码结束 ---',
     '',
     '请从上面代码的末尾继续写，输出后续部分：'
@@ -1833,13 +1958,9 @@ function continueGenerate(){
   if(useReal){
     state.abort = new AbortController();
     var appended = '';
-    var body = {
-      model: $('model').value, temperature: 0.3, stream: true,
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '请继续补全代码' }]
-    };
+    var body = { model: $('model').value, temperature: 0.3, stream: true, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '请继续补全代码' }] };
     fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
       body: JSON.stringify(body), signal: state.abort.signal
     })
     .then(function(resp){
@@ -2266,6 +2387,7 @@ document.addEventListener('touchstart', function(e){
       state.keyProfiles[state.activeProfile].model = model.value;
       saveKeyProfiles();
     }
+    try { renderAttachments(); } catch(e){}
   });
   if(profileName) profileName.addEventListener('input', onChange);
   var prompt = $('prompt');
