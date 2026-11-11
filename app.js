@@ -31,7 +31,8 @@ var state = {
   galleryTab: 'history',
   _lastEditorUpdate: 0,
   _lastPreviewUpdate: 0,
-  _streamingComp: false
+  _streamingComp: false,
+  mobileInspectorActive: false
 };
 
 function $(id){ return document.getElementById(id); }
@@ -278,9 +279,7 @@ function newProjectData(name){
     name: name || '未命名工程', createdAt: Date.now(), updatedAt: Date.now(),
     components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
     history: [], historyIndex: -1,
-    messages: [],
-    favorites: [],
-    gallery: []
+    messages: [], favorites: [], gallery: []
   };
 }
 function saveProjects(){
@@ -1030,8 +1029,9 @@ function copyScreenshotToClipboard(){
   }catch(e){ alert('复制失败：' + e.message); }
 }
 
-/* ================= 元素检查器 ================= */
+/* ================= 元素检查器（桌面 + 移动端） ================= */
 function toggleInspector(){
+  if(isMobile()){ toggleMobileInspector(); return; }
   state.inspectorActive = !state.inspectorActive;
   var panel = $('inspector');
   if(panel) panel.classList.toggle('show', state.inspectorActive);
@@ -1046,7 +1046,7 @@ function setupInspector(){
     iframeDoc.body.style.cursor = 'crosshair';
     iframeDoc.addEventListener('click', inspectorClickHandler, true);
     iframeDoc.addEventListener('mouseover', inspectorHoverHandler, true);
-    addMsg('assistant', '🔍 元素检查已开启。', '点击预览中的元素查看详情');
+    if(!isMobile()) addMsg('assistant', '🔍 元素检查已开启。', '点击预览中的元素查看详情');
   }catch(e){
     alert('无法访问预览内容：' + e.message);
   }
@@ -1088,21 +1088,42 @@ function inspectorClickHandler(e){
   state.inspectorTarget = el;
   var cs = (el.ownerDocument.defaultView || window).getComputedStyle(el);
   var html = el.outerHTML.slice(0, 500);
-  var body = $('inspectorBody');
-  state.inspectorStyles = {
-    color: cs.color, backgroundColor: cs.backgroundColor, fontSize: cs.fontSize, fontWeight: cs.fontWeight,
-    padding: cs.padding, margin: cs.margin, borderRadius: cs.borderRadius, display: cs.display
-  };
-  body.innerHTML =
-    '<div class="inspector-prop"><label>标签 / ID / Class</label><code>' + esc(el.tagName.toLowerCase()) + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/).join('.') : '') + '</code></div>' +
-    '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(html) + '</code></div>' +
-    '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
-    '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
-    '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
-    '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
-    '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
-    '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
-    '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+  var label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/)[0] : '');
+
+  if(isMobile()){
+    var tag = $('inspMobileTag');
+    if(tag) tag.textContent = label;
+    var body = $('inspMobileBody');
+    if(body){
+      body.innerHTML =
+        '<div class="inspector-prop"><label>元素</label><code>' + esc(label) + '</code></div>' +
+        '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(html) + '</code></div>' +
+        '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
+        '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
+        '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
+        '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
+        '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
+        '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
+        '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+    }
+    if(navigator.vibrate) navigator.vibrate(8);
+  } else {
+    var body2 = $('inspectorBody');
+    state.inspectorStyles = {
+      color: cs.color, backgroundColor: cs.backgroundColor, fontSize: cs.fontSize, fontWeight: cs.fontWeight,
+      padding: cs.padding, margin: cs.margin, borderRadius: cs.borderRadius, display: cs.display
+    };
+    if(body2) body2.innerHTML =
+      '<div class="inspector-prop"><label>标签 / ID / Class</label><code>' + esc(label) + '</code></div>' +
+      '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(html) + '</code></div>' +
+      '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
+      '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
+      '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
+      '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
+      '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
+      '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
+      '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+  }
 }
 function rgbToHex(rgb){
   if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
@@ -1118,21 +1139,45 @@ function rgbToHex(rgb){
 function applyInspectorChanges(){
   if(!state.inspectorTarget){ alert('请先在预览里点选一个元素'); return; }
   var el = state.inspectorTarget;
-  var color = $('insp_color').value.trim();
-  var bg = $('insp_bg').value.trim();
-  var fs = $('insp_fs').value.trim();
-  var fw = $('insp_fw').value.trim();
-  var pad = $('insp_pad').value.trim();
-  var mar = $('insp_mar').value.trim();
-  var br = $('insp_br').value.trim();
-  if(color) el.style.color = color;
-  if(bg) el.style.backgroundColor = bg;
-  if(fs) el.style.fontSize = fs;
-  if(fw) el.style.fontWeight = fw;
-  if(pad) el.style.padding = pad;
-  if(mar) el.style.margin = mar;
-  if(br) el.style.borderRadius = br;
-  addMsg('assistant', '✅ 已应用修改到预览。', '提示：这只改了预览里的样式，要写回代码请告诉我"把刚才的样式写回代码"');
+  var val = function(k){ var e = $('insp_' + k); return e ? e.value.trim() : ''; };
+  if(val('color')) el.style.color = val('color');
+  if(val('bg')) el.style.backgroundColor = val('bg');
+  if(val('fs')) el.style.fontSize = val('fs');
+  if(val('fw')) el.style.fontWeight = val('fw');
+  if(val('pad')) el.style.padding = val('pad');
+  if(val('mar')) el.style.margin = val('mar');
+  if(val('br')) el.style.borderRadius = val('br');
+  if(isMobile()){ if(navigator.vibrate) navigator.vibrate([10, 50, 10]); }
+  addMsg('assistant', '✅ 已应用修改到预览。', '要写回代码请告诉我"把刚才的样式写回代码"');
+}
+
+/* ================= 移动端元素检查器 ================= */
+function toggleMobileInspector(){
+  if(state.mobileInspectorActive){ exitMobileInspector(); return; }
+  state.mobileInspectorActive = true;
+  var panel = $('inspectorMobile');
+  var cross = $('inspectorCrosshair');
+  if(panel) panel.classList.add('show');
+  if(cross) cross.classList.add('show');
+  $('inspMobileTag').textContent = '请点选元素';
+  $('inspMobileBody').innerHTML = '<div class="inspector-empty">👆 点一下页面里的元素，就能看到它的样式</div>';
+  state.inspectorTarget = null;
+  try{ setupInspector(); } catch(e){ console.error(e); }
+  addMsg('assistant', '🔍 元素检查已开启（手机模式）', '点击任意元素查看样式；点「完成」退出');
+}
+function exitMobileInspector(){
+  state.mobileInspectorActive = false;
+  var panel = $('inspectorMobile');
+  var cross = $('inspectorCrosshair');
+  if(panel) panel.classList.remove('show');
+  if(cross) cross.classList.remove('show');
+  state.inspectorTarget = null;
+  try{ teardownInspector(); } catch(e){}
+}
+function reselectInspector(){
+  $('inspMobileTag').textContent = '请点选元素';
+  $('inspMobileBody').innerHTML = '<div class="inspector-empty">👆 点一下页面里的元素，就能看到它的样式</div>';
+  state.inspectorTarget = null;
 }
 
 /* ================= 一句话改风格 ================= */
@@ -1200,49 +1245,37 @@ function applyStylePreset(preset){
 }
 function initStyleBarSafely(){ try{ initStyleBar(); }catch(e){ console.error(e); } }
 
-/* ================= 换色板 ================= */
-var COLOR_PALETTES = [
-  { name: '深空黑', primary: '#0a0a0f', secondary: '#1a1a24', accent: '#6d5cff', text: '#e8ecf4' },
-  { name: '纯净白', primary: '#ffffff', secondary: '#f5f5f7', accent: '#0066cc', text: '#1a1a1a' },
-  { name: '暖橙', primary: '#1a0f08', secondary: '#2d1a0f', accent: '#ff6b35', text: '#fff5eb' },
-  { name: '森绿', primary: '#0a1a0f', secondary: '#0f2d1a', accent: '#22c55e', text: '#ebfff5' },
-  { name: '海洋蓝', primary: '#0a1220', secondary: '#0f1a30', accent: '#3b82f6', text: '#ebf3ff' },
-  { name: '玫瑰粉', primary: '#1a0a12', secondary: '#2d0f1a', accent: '#ec4899', text: '#fff0f5' },
-  { name: '莫兰迪', primary: '#f0ebe3', secondary: '#e8e0d5', accent: '#8b7d6b', text: '#3d3529' },
-  { name: '赛博朋克', primary: '#0a0a0a', secondary: '#1a0a1a', accent: '#ff00ff', text: '#00ffcc' },
-  { name: '日落', primary: '#2d1810', secondary: '#4a2515', accent: '#ff8c42', text: '#fff2e6' },
-  { name: '极简灰', primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#999999', text: '#e8e8e8' }
-];
-function showColorPalette(){
-  var row = $('colorPaletteRow');
-  row.innerHTML = '';
-  for(var i = 0; i < COLOR_PALETTES.length; i++){
-    var p = COLOR_PALETTES[i];
-    var sw = document.createElement('div');
-    sw.className = 'color-swatch';
-    sw.title = p.name;
-    sw.style.background = p.primary;
-    sw.innerHTML = '<div style="background:linear-gradient(135deg,' + p.secondary + ',' + p.accent + ')"></div>';
-    (function(pal){ sw.addEventListener('click', function(){ applyPalette(pal); }); })(p);
-    row.appendChild(sw);
+/* ================= 全屏 ================= */
+function toggleAppFullscreen(){
+  var doc = document.documentElement;
+  if(!document.fullscreenElement && !document.webkitFullscreenElement){
+    var req = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if(req){ req.call(doc).catch(function(e){ console.error('全屏失败:', e); }); }
+    else { alert('当前浏览器不支持全屏'); }
+  } else {
+    var exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if(exit){ exit.call(document); }
   }
-  $('colorPalette').classList.toggle('show');
 }
-function applyPalette(p){
-  var replaceInCode = function(code){
-    code = code.replace(/#0a0a0f|#0f0f14|#1a1a20|#1a1a24|#050506|#08090d/gi, p.primary);
-    code = code.replace(/#3a3a42|#2a2a32|#141824|#1f2433/gi, p.secondary);
-    code = code.replace(/#6d5cff|#8b5cf6|#a78bfa|#6d5cff/gi, p.accent);
-    code = code.replace(/#e8ecf4|#c9d1e3|#dbe4f5/gi, p.text);
-    return code;
-  };
-  for(var i = 0; i < state.components.length; i++) state.components[i].code = replaceInCode(state.components[i].code);
-  setEditorValue(getActiveCompCode(), compLang(state.components[state.activeComp]));
-  renderComponents();
-  refreshPreview();
-  $('colorPalette').classList.remove('show');
-  addMsg('assistant', '✅ 已应用色板：' + p.name, '主色 ' + p.accent + ' · 背景 ' + p.primary);
+function togglePreviewFullscreen(){
+  var wrap = $('pvWrap');
+  var exitBtn = $('pvFullscreenExit');
+  if(!wrap) return;
+  var isFs = wrap.classList.toggle('preview-fullscreen');
+  if(exitBtn) exitBtn.classList.toggle('show', isFs);
+  if(isFs){
+    setTimeout(function(){
+      try { applyViewport(); } catch(e){}
+      if(state.editorReady) state.editor.layout();
+    }, 100);
+  } else {
+    setTimeout(function(){ try { applyViewport(); } catch(e){} }, 100);
+  }
 }
+document.addEventListener('fullscreenchange', function(){
+  var btn = $('pvFullscreenExit');
+  if(!document.fullscreenElement && btn) btn.classList.remove('show');
+});
 
 /* ================= Prompt 模板 ================= */
 var DEFAULT_TEMPLATES = [
@@ -1567,8 +1600,7 @@ function handleFileUpload(e){
       }
       var reader = new FileReader();
       reader.onload = function(ev){
-        var content = ev.target.result;
-        state.attachedFiles.push({ name: file.name, kind: kind, content: content, size: file.size });
+        state.attachedFiles.push({ name: file.name, kind: kind, content: ev.target.result, size: file.size });
         renderAttachments();
       };
       if(kind === 'image') reader.readAsDataURL(file);
@@ -1602,16 +1634,10 @@ function renderAttachments(){
     bar.appendChild(warn);
   }
 }
-function removeAttachment(i){
-  state.attachedFiles.splice(i, 1);
-  renderAttachments();
-}
-function clearAttachments(){
-  state.attachedFiles = [];
-  renderAttachments();
-}
+function removeAttachment(i){ state.attachedFiles.splice(i, 1); renderAttachments(); }
+function clearAttachments(){ state.attachedFiles = []; renderAttachments(); }
 
-/* ================= 作品墙（历史/收藏） ================= */
+/* ================= 作品墙 ================= */
 function openGallery(){ state.galleryTab = 'history'; renderGallery(); $('gallery').classList.add('show'); }
 function openFavorites(){ state.galleryTab = 'fav'; renderGallery(); $('gallery').classList.add('show'); }
 function closeGallery(){ $('gallery').classList.remove('show'); }
@@ -1628,9 +1654,7 @@ function renderGallery(){
   if(state.galleryTab === 'history'){
     if(p && p.history) list = p.history.map(function(item, idx){ return { item: item, idx: idx, fav: false }; }).reverse();
   } else {
-    if(p && p.favorites){
-      list = p.favorites.map(function(fav){ return { item: fav, idx: fav.historyIdx, fav: true }; }).reverse();
-    }
+    if(p && p.favorites) list = p.favorites.map(function(fav){ return { item: fav, idx: fav.historyIdx, fav: true }; }).reverse();
   }
 
   if(list.length === 0){
@@ -1667,13 +1691,11 @@ function renderGallery(){
   setTimeout(function(){
     var cards = grid.querySelectorAll('.thumb');
     for(var k = 0; k < cards.length; k++){
-      var entry = list[k];
-      if(!entry) continue;
+      var entry = list[k]; if(!entry) continue;
       var comps = entry.item.components || [];
       var hp = '', cp = '', jp = '';
       for(var j = 0; j < comps.length; j++){
-        var c = comps[j];
-        if(!c.enabled) continue;
+        var c = comps[j]; if(!c.enabled) continue;
         if(c.type === 'html') hp += c.code;
         else if(c.type === 'css') cp += c.code;
         else if(c.type === 'js') jp += c.code;
@@ -1777,9 +1799,7 @@ function generate(){
   if(imageFiles.length > 0 && isVisionModel){
     userContent = [];
     if(textContent) userContent.push({ type: 'text', text: textContent });
-    for(var i = 0; i < imageFiles.length; i++){
-      userContent.push({ type: 'image_url', image_url: { url: imageFiles[i].content } });
-    }
+    for(var i = 0; i < imageFiles.length; i++) userContent.push({ type: 'image_url', image_url: { url: imageFiles[i].content } });
   } else if(imageFiles.length > 0 && !isVisionModel){
     userContent = textContent || '（用户上传了图片但当前模型不支持看图）';
   } else {
@@ -1946,10 +1966,7 @@ function continueGenerate(){
     '只输出需要追加的新内容，保持原有的缩进和风格。',
     '如果原代码已经接近完整，只补全缺失的闭合标签即可。',
     '不要任何解释文字，不要 markdown 代码块，直接输出后续代码。',
-    '',
-    '【已生成的代码】', currentCode,
-    '--- 代码结束 ---',
-    '',
+    '', '【已生成的代码】', currentCode, '--- 代码结束 ---', '',
     '请从上面代码的末尾继续写，输出后续部分：'
   ].join('\n');
 
@@ -2375,6 +2392,41 @@ document.addEventListener('touchstart', function(e){
   if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu();
 }, { passive: true });
 
+/* 长按预览区 800ms 开启移动检查器 */
+(function(){
+  var iframe = $('preview');
+  if(!iframe || !isMobile()) return;
+  var pressTimer = null, moved = false, startX = 0, startY = 0;
+  function start(){
+    if(state.mobileInspectorActive) return;
+    if(!state.editorReady) return;
+    var doc;
+    try{ doc = iframe.contentDocument || iframe.contentWindow.document; }catch(e){ return; }
+    if(!doc) return;
+    doc.addEventListener('touchstart', function(e){
+      if(e.touches.length !== 1) return;
+      moved = false;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      pressTimer = setTimeout(function(){
+        if(!moved){
+          toggleMobileInspector();
+          if(navigator.vibrate) navigator.vibrate([15, 30, 15]);
+        }
+      }, 800);
+    }, { passive: true });
+    doc.addEventListener('touchmove', function(e){
+      if(!pressTimer) return;
+      var dx = Math.abs(e.touches[0].clientX - startX);
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if(dx > 10 || dy > 10){ moved = true; clearTimeout(pressTimer); pressTimer = null; }
+    }, { passive: true });
+    doc.addEventListener('touchend', function(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } });
+    doc.addEventListener('touchcancel', function(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } });
+  }
+  iframe.addEventListener('load', start);
+  if(iframe.contentDocument && iframe.contentDocument.readyState === 'complete') start();
+})();
+
 /* ================= 输入监听 ================= */
 (function(){
   var apiKey = $('apiKey'), baseUrl = $('baseUrl'), model = $('model'), profileName = $('profileName');
@@ -2394,6 +2446,22 @@ document.addEventListener('touchstart', function(e){
   if(prompt) prompt.addEventListener('keydown', function(e){
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); generate(); }
   });
+  if(prompt){
+    prompt.addEventListener('focus', function(){
+      setTimeout(function(){ document.body.classList.add('keyboard-open'); }, 100);
+    });
+    prompt.addEventListener('blur', function(){
+      setTimeout(function(){ document.body.classList.remove('keyboard-open'); }, 100);
+    });
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', function(){
+      var vh = window.visualViewport.height;
+      var wh = window.innerHeight;
+      if(vh < wh * 0.75){ document.body.classList.add('keyboard-open'); }
+      else { document.body.classList.remove('keyboard-open'); }
+    });
+  }
   try{
     var sm = localStorage.getItem('cu-stream-mode');
     if(sm !== null && $('streamMode')) $('streamMode').checked = sm === '1';
@@ -2415,7 +2483,7 @@ document.addEventListener('keydown', function(e){
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
   else if(e.key === 'Escape'){
     closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery();
-    $('colorPalette').classList.remove('show');
+    if(state.mobileInspectorActive) exitMobileInspector();
   }
 });
 
@@ -2439,6 +2507,12 @@ window.addEventListener('load', function(){
   window.addEventListener('resize', function(){
     try { applyViewport(); } catch(e){}
     try { if(state.editorReady && isMobile() && state.mobileTab === 'code') state.editor.layout(); } catch(e){}
+  });
+  window.addEventListener('fullscreenchange', function(){
+    setTimeout(function(){
+      try { applyViewport(); } catch(e){}
+      try { if(state.editorReady) state.editor.layout(); } catch(e){}
+    }, 200);
   });
   console.log('✅ Code Utopia 初始化完成');
 });
