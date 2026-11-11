@@ -97,7 +97,6 @@ function detectLanguage(code){
 /* ================= 智能分区 ================= */
 function smartSplit(raw){
   if(!raw || !raw.trim()) return [];
-
   var text = raw.trim();
   text = text.replace(/^```(?:html|css|js|javascript)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
 
@@ -108,7 +107,6 @@ function smartSplit(raw){
   if(firstMark > 0) text = text.slice(firstMark);
 
   var comps = [];
-
   var styleBlocks = [];
   var m;
   var styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi;
@@ -141,48 +139,32 @@ function smartSplit(raw){
   var hasHtmlDoc = /<!DOCTYPE|<html[\s>]/i.test(text);
 
   if(hasHtmlDoc){
-    if(headExtras){
-      comps.push({ name: 'Head 资源', type: 'html', code: headExtras, enabled: true });
-    }
+    if(headExtras) comps.push({ name: 'Head 资源', type: 'html', code: headExtras, enabled: true });
     if(bodyContent){
       var bodyParts = splitBodyIntoSections(bodyContent);
       if(bodyParts.length > 1){
-        for(var i = 0; i < bodyParts.length; i++){
-          comps.push({ name: bodyParts[i].name, type: 'html', code: bodyParts[i].code, enabled: true });
-        }
+        for(var i = 0; i < bodyParts.length; i++) comps.push({ name: bodyParts[i].name, type: 'html', code: bodyParts[i].code, enabled: true });
       } else {
         comps.push({ name: '页面结构', type: 'html', code: bodyContent, enabled: true });
       }
     }
-    for(var s = 0; s < styleBlocks.length; s++){
-      comps.push({ name: styleBlocks.length > 1 ? ('样式 ' + (s+1)) : '样式', type: 'css', code: styleBlocks[s], enabled: true });
-    }
-    for(var sc = 0; sc < scriptBlocks.length; sc++){
-      comps.push({ name: scriptBlocks.length > 1 ? ('交互 ' + (sc+1)) : '交互', type: 'js', code: scriptBlocks[sc], enabled: true });
-    }
+    for(var s = 0; s < styleBlocks.length; s++) comps.push({ name: styleBlocks.length > 1 ? ('样式 ' + (s+1)) : '样式', type: 'css', code: styleBlocks[s], enabled: true });
+    for(var sc = 0; sc < scriptBlocks.length; sc++) comps.push({ name: scriptBlocks.length > 1 ? ('交互 ' + (sc+1)) : '交互', type: 'js', code: scriptBlocks[sc], enabled: true });
   } else {
     var lang = detectLanguage(text);
     if(lang === 'html'){
       var parts = splitBodyIntoSections(text);
       if(parts.length > 1){
-        for(var p = 0; p < parts.length; p++){
-          comps.push({ name: parts[p].name, type: 'html', code: parts[p].code, enabled: true });
-        }
+        for(var p = 0; p < parts.length; p++) comps.push({ name: parts[p].name, type: 'html', code: parts[p].code, enabled: true });
       } else {
         comps.push({ name: '页面结构', type: 'html', code: text, enabled: true });
       }
-    } else if(lang === 'css'){
-      comps.push({ name: '样式', type: 'css', code: text, enabled: true });
-    } else if(lang === 'js'){
-      comps.push({ name: '交互', type: 'js', code: text, enabled: true });
-    } else {
-      comps.push({ name: '页面', type: 'html', code: text, enabled: true });
-    }
+    } else if(lang === 'css') comps.push({ name: '样式', type: 'css', code: text, enabled: true });
+    else if(lang === 'js') comps.push({ name: '交互', type: 'js', code: text, enabled: true });
+    else comps.push({ name: '页面', type: 'html', code: text, enabled: true });
   }
 
-  if(comps.length === 0){
-    comps.push({ name: '页面', type: detectLanguage(text), code: text, enabled: true });
-  }
+  if(comps.length === 0) comps.push({ name: '页面', type: detectLanguage(text), code: text, enabled: true });
   return comps;
 }
 
@@ -192,7 +174,6 @@ function parseMarkedSections(text){
   var m;
   var fileRe = /<!--\s*(?:FILE|文件)[\s:：]+([^\s>]+)\s*-->/gi;
   while((m = fileRe.exec(text))) fileMarkers.push({ name: m[1], pos: m.index, end: m.index + m[0].length });
-  
   if(fileMarkers.length > 0){
     for(var i = 0; i < fileMarkers.length; i++){
       var start = fileMarkers[i].end;
@@ -211,15 +192,13 @@ function parseMarkedSections(text){
 
 function splitBodyIntoSections(html){
   if(!html || !html.trim()) return [];
-  var topLevelRe = /<(section|main|header|footer|nav|aside|article)[^>]*>[\s\S]*?<\/\1>/gi;
-  var matches = html.match(topLevelRe) || [];
-  
+  var re = /<(section|main|header|footer|nav|aside|article)[^>]*>[\s\S]*?<\/\1>/gi;
+  var matches = html.match(re) || [];
   if(matches.length >= 2){
     var parts = [];
     var lastPos = 0;
     var idx = 0;
     var match;
-    var re = /<(section|main|header|footer|nav|aside|article)[^>]*>[\s\S]*?<\/\1>/gi;
     while((match = re.exec(html))){
       if(match.index > lastPos){
         var before = html.slice(lastPos, match.index).trim();
@@ -236,28 +215,8 @@ function splitBodyIntoSections(html){
     }
     var tail = html.slice(lastPos).trim();
     if(tail) parts.push({ name: '片段 ' + (++idx), code: tail });
-    
     if(parts.length >= 2) return parts;
   }
-  
-  var commentRe = /<!--\s*([\s\S]{1,80}?)\s*-->/g;
-  var commentMatches = [];
-  var cm;
-  while((cm = commentRe.exec(html))) commentMatches.push({ text: cm[1], pos: cm.index, end: cm.index + cm[0].length });
-  
-  if(commentMatches.length >= 2){
-    var cparts = [];
-    for(var ci = 0; ci < commentMatches.length; ci++){
-      var cstart = commentMatches[ci].end;
-      var cend = ci + 1 < commentMatches.length ? commentMatches[ci+1].pos : html.length;
-      var ccontent = html.slice(cstart, cend).trim();
-      if(ccontent){
-        cparts.push({ name: commentMatches[ci].text.slice(0, 20) || ('片段 ' + (ci+1)), code: ccontent });
-      }
-    }
-    if(cparts.length >= 2) return cparts;
-  }
-  
   return [{ name: '页面结构', code: html }];
 }
 
@@ -276,12 +235,10 @@ function onModifyToggle(checked){
   }
   try{ localStorage.setItem('cu-modify-mode', checked ? '1' : '0'); }catch(e){}
 }
-
 function buildModifyContext(){
   var html = buildPreviewHtml();
   return { html: html };
 }
-
 function buildModifySystemPrompt(ctx){
   return [
     '你是前端代码修改助手。用户会给你一份【现有完整代码】和一条【修改需求】。',
@@ -300,15 +257,15 @@ function buildModifySystemPrompt(ctx){
   ].join('\n');
 }
 
-/* ================= 工程管理（含重命名 + 预览 + 聊天记录保留） ================= */
+/* ================= 工程管理 ================= */
 function loadProjects(){
   try{ var raw = localStorage.getItem('cu-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
   var activeRaw = localStorage.getItem('cu-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
   if(state.projects.length === 0){ var p = newProjectData('我的第一个工程'); state.projects.push(p); state.activeProjectId = p.id; }
   if(!state.activeProjectId || !state.projects.some(function(x){ return x.id === state.activeProjectId; })) state.activeProjectId = state.projects[0].id;
-  // 兼容旧数据：确保 messages 字段存在
   for(var i = 0; i < state.projects.length; i++){
     if(!state.projects[i].messages) state.projects[i].messages = [];
+    if(!state.projects[i].history) state.projects[i].history = [];
   }
   saveProjects();
 }
@@ -329,19 +286,12 @@ function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(
 function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
 function closeProjects(){ $('projectsView').classList.remove('show'); }
 
-/* 生成工程卡片预览文本 */
 function getProjectPreviewText(p){
   if(!p.components || p.components.length === 0) return '空工程';
-  // 优先用第一个 html 组件
   for(var i = 0; i < p.components.length; i++){
     var c = p.components[i];
     if(c.type === 'html' && c.code && c.code.trim()){
-      var txt = c.code
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      var txt = c.code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       if(txt) return txt.slice(0, 80);
     }
   }
@@ -377,7 +327,6 @@ function renderProjects(){
   if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
   grid.innerHTML = html;
 }
-
 function createProject(){
   var name = prompt('新工程名称：', '新工程'); if(name === null) return;
   name = name.trim() || '新工程';
@@ -412,8 +361,6 @@ function deleteProject(id){
   saveProjects();
   renderProjects();
 }
-
-/* 重命名工程 */
 function openRenameProject(id){
   state.renamingProjectId = id;
   var p = null;
@@ -461,7 +408,6 @@ function loadActiveProjectIntoState(){
   state.activeComp = 0;
   state.history = p.history || [];
   state.historyIndex = typeof p.historyIndex === 'number' ? p.historyIndex : state.history.length - 1;
-  // 恢复聊天记录
   state.messages = p.messages || [];
   renderMessages();
   setEditorValue(getActiveCompCode(), compLang(state.components[0]));
@@ -470,14 +416,10 @@ function loadActiveProjectIntoState(){
   refreshPreview();
 }
 
-/* 渲染已保存的聊天记录 */
 function renderMessages(){
   var msgs = $('msgs');
   msgs.innerHTML = '';
-  if(state.messages.length === 0){
-    renderGuide();
-    return;
-  }
+  if(state.messages.length === 0){ renderGuide(); return; }
   for(var i = 0; i < state.messages.length; i++){
     var m = state.messages[i];
     var div = document.createElement('div');
@@ -541,7 +483,6 @@ function addMsg(role, text, sub){
     var badge = $('chatBadge');
     if(badge) badge.classList.add('show');
   }
-  // 自动保存到当前工程
   var p = getActiveProject();
   if(p){ p.messages = state.messages; saveProjects(); }
 }
@@ -828,6 +769,14 @@ function renderHistory(){
   }
   list.innerHTML = html;
 }
+function filterHistory(q){
+  q = (q || '').toLowerCase().trim();
+  var items = document.querySelectorAll('#histList .hist-item');
+  for(var i = 0; i < items.length; i++){
+    var text = items[i].textContent.toLowerCase();
+    items[i].style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
+  }
+}
 function snapshot(prompt){
   var comps = [];
   for(var i = 0; i < state.components.length; i++){
@@ -937,9 +886,7 @@ function showColorPalette(){
     sw.title = p.name;
     sw.style.background = p.primary;
     sw.innerHTML = '<div style="background:linear-gradient(135deg,' + p.secondary + ',' + p.accent + ')"></div>';
-    (function(pal){
-      sw.addEventListener('click', function(){ applyPalette(pal); });
-    })(p);
+    (function(pal){ sw.addEventListener('click', function(){ applyPalette(pal); }); })(p);
     row.appendChild(sw);
   }
   $('colorPalette').classList.toggle('show');
@@ -952,9 +899,7 @@ function applyPalette(p){
     code = code.replace(/#e8ecf4|#c9d1e3|#dbe4f5/gi, p.text);
     return code;
   };
-  for(var i = 0; i < state.components.length; i++){
-    state.components[i].code = replaceInCode(state.components[i].code);
-  }
+  for(var i = 0; i < state.components.length; i++) state.components[i].code = replaceInCode(state.components[i].code);
   setEditorValue(getActiveCompCode(), compLang(state.components[state.activeComp]));
   renderComponents();
   refreshPreview();
@@ -962,39 +907,24 @@ function applyPalette(p){
   addMsg('assistant', '✅ 已应用色板：' + p.name, '主色 ' + p.accent + ' · 背景 ' + p.primary);
 }
 
-/* ================= Prompt 模板（可编辑） ================= */
+/* ================= Prompt 模板 ================= */
 var DEFAULT_TEMPLATES = [
   { name: '登录页', prompt: '生成一个{brand}品牌的登录页，主题色{color}，{dark}风格，包含邮箱输入框、密码输入框、登录按钮、忘记密码链接。', vars: [
-    { key: 'brand', label: '品牌名', default: 'Acme' },
-    { key: 'color', label: '主题色', default: '紫色' },
-    { key: 'dark', label: '风格', default: '深色' }
+    { key: 'brand', label: '品牌名', default: 'Acme' },{ key: 'color', label: '主题色', default: '紫色' },{ key: 'dark', label: '风格', default: '深色' }
   ]},
   { name: '落地页', prompt: '生成一个{brand}产品的落地页，包含顶部导航、Hero 区（大标题+副标题+CTA 按钮）、三个特性卡片、底部 footer，主题色{color}。', vars: [
-    { key: 'brand', label: '品牌名', default: 'Acme' },
-    { key: 'color', label: '主题色', default: '蓝色' }
+    { key: 'brand', label: '品牌名', default: 'Acme' },{ key: 'color', label: '主题色', default: '蓝色' }
   ]},
-  { name: '定价页', prompt: '生成一个 SaaS 定价页，三档套餐（基础/专业/企业），每档包含价格、功能列表、CTA 按钮，中间档突出显示。主题色{color}。', vars: [
-    { key: 'color', label: '主题色', default: '紫色' }
-  ]},
-  { name: '待办清单', prompt: '生成一个待办清单应用，支持添加、删除、勾选完成，带本地存储，圆角卡片风格，{dark}主题。', vars: [
-    { key: 'dark', label: '风格', default: '浅色' }
-  ]},
-  { name: '数据仪表盘', prompt: '生成一个数据仪表盘，左侧导航栏，顶部三个数据卡片（销售额/用户/订单），下方柱状图和折线图，{dark}主题。', vars: [
-    { key: 'dark', label: '风格', default: '深色' }
-  ]},
+  { name: '定价页', prompt: '生成一个 SaaS 定价页，三档套餐（基础/专业/企业），每档包含价格、功能列表、CTA 按钮，中间档突出显示。主题色{color}。', vars: [{ key: 'color', label: '主题色', default: '紫色' }] },
+  { name: '待办清单', prompt: '生成一个待办清单应用，支持添加、删除、勾选完成，带本地存储，圆角卡片风格，{dark}主题。', vars: [{ key: 'dark', label: '风格', default: '浅色' }] },
+  { name: '数据仪表盘', prompt: '生成一个数据仪表盘，左侧导航栏，顶部三个数据卡片（销售额/用户/订单），下方柱状图和折线图，{dark}主题。', vars: [{ key: 'dark', label: '风格', default: '深色' }] },
   { name: '个人博客', prompt: '生成一个个人博客首页，包含作者头像、简介、文章列表（卡片式）、标签分类，{dark}主题，{color}作为强调色。', vars: [
-    { key: 'dark', label: '风格', default: '浅色' },
-    { key: 'color', label: '强调色', default: '橙色' }
+    { key: 'dark', label: '风格', default: '浅色' },{ key: 'color', label: '强调色', default: '橙色' }
   ]},
-  { name: '联系表单', prompt: '生成一个联系表单页面，包含姓名、邮箱、留言内容、提交按钮，表单下方显示公司地址和联系方式，{dark}主题。', vars: [
-    { key: 'dark', label: '风格', default: '深色' }
-  ]},
-  { name: '产品展示', prompt: '生成一个产品展示页，左侧产品大图，右侧产品名、价格、描述、加购按钮，下方三个卖点图标，主题色{color}。', vars: [
-    { key: 'color', label: '主题色', default: '绿色' }
-  ]}
+  { name: '联系表单', prompt: '生成一个联系表单页面，包含姓名、邮箱、留言内容、提交按钮，表单下方显示公司地址和联系方式，{dark}主题。', vars: [{ key: 'dark', label: '风格', default: '深色' }] },
+  { name: '产品展示', prompt: '生成一个产品展示页，左侧产品大图，右侧产品名、价格、描述、加购按钮，下方三个卖点图标，主题色{color}。', vars: [{ key: 'color', label: '主题色', default: '绿色' }] }
 ];
 var PROMPT_TEMPLATES = [];
-
 function loadTemplates(){
   try{
     var raw = localStorage.getItem('cu-templates');
@@ -1003,7 +933,6 @@ function loadTemplates(){
   }catch(e){ PROMPT_TEMPLATES = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES)); }
 }
 function saveTemplates(){ try{ localStorage.setItem('cu-templates', JSON.stringify(PROMPT_TEMPLATES)); }catch(e){} }
-
 function showTemplates(){
   var list = $('templateList');
   list.innerHTML = '';
@@ -1036,27 +965,20 @@ function showTemplates(){
   $('templateModal').classList.add('show');
 }
 function closeTemplates(){ $('templateModal').classList.remove('show'); }
-
 function openEditTemplate(idx){
   state.editingTemplateIdx = idx;
   if(idx === -1){
-    // 新建
     $('editTemplateTitle').textContent = '新建模板';
     $('editTemplateName').value = '';
     $('editTemplatePrompt').value = '';
     $('editTemplateVars').value = '';
   } else {
-    var t = PROMPT_TEMPLATES[idx];
-    if(!t) return;
+    var t = PROMPT_TEMPLATES[idx]; if(!t) return;
     $('editTemplateTitle').textContent = '编辑模板';
     $('editTemplateName').value = t.name || '';
     $('editTemplatePrompt').value = t.prompt || '';
     var varsText = '';
-    if(t.vars && t.vars.length){
-      for(var i = 0; i < t.vars.length; i++){
-        varsText += (t.vars[i].key || '') + '|' + (t.vars[i].label || '') + '|' + (t.vars[i].default || '') + '\n';
-      }
-    }
+    if(t.vars && t.vars.length) for(var i = 0; i < t.vars.length; i++) varsText += (t.vars[i].key || '') + '|' + (t.vars[i].label || '') + '|' + (t.vars[i].default || '') + '\n';
     $('editTemplateVars').value = varsText.trim();
   }
   closeTemplates();
@@ -1076,22 +998,14 @@ function saveEditTemplate(){
   if(varsText){
     var lines = varsText.split('\n');
     for(var i = 0; i < lines.length; i++){
-      var line = lines[i].trim();
-      if(!line) continue;
+      var line = lines[i].trim(); if(!line) continue;
       var parts = line.split('|');
-      vars.push({
-        key: (parts[0] || '').trim(),
-        label: (parts[1] || parts[0] || '').trim(),
-        default: (parts[2] || '').trim()
-      });
+      vars.push({ key: (parts[0] || '').trim(), label: (parts[1] || parts[0] || '').trim(), default: (parts[2] || '').trim() });
     }
   }
   var newT = { name: name, prompt: prompt, vars: vars };
-  if(state.editingTemplateIdx >= 0){
-    PROMPT_TEMPLATES[state.editingTemplateIdx] = newT;
-  } else {
-    PROMPT_TEMPLATES.push(newT);
-  }
+  if(state.editingTemplateIdx >= 0) PROMPT_TEMPLATES[state.editingTemplateIdx] = newT;
+  else PROMPT_TEMPLATES.push(newT);
   saveTemplates();
   closeEditTemplate();
   showTemplates();
@@ -1103,7 +1017,6 @@ function deleteTemplate(idx){
   saveTemplates();
   showTemplates();
 }
-
 function openTemplateForm(t){
   state.pendingTemplate = t;
   $('templateFormTitle').textContent = t.name;
@@ -1137,7 +1050,7 @@ function applyTemplate(){
   generate();
 }
 
-/* ================= 快捷键面板 ================= */
+/* ================= 快捷键 ================= */
 var SHORTCUTS = [
   { keys: ['Ctrl', 'Enter'], desc: '生成 / 修改' },
   { keys: ['Ctrl', 'F'], desc: '搜索代码' },
@@ -1156,10 +1069,7 @@ function showKbdPanel(){
     var item = document.createElement('div');
     item.className = 'kbd-item';
     var keysHtml = '';
-    for(var k = 0; k < s.keys.length; k++){
-      keysHtml += '<kbd>' + s.keys[k] + '</kbd>';
-      if(k < s.keys.length - 1) keysHtml += '+';
-    }
+    for(var k = 0; k < s.keys.length; k++){ keysHtml += '<kbd>' + s.keys[k] + '</kbd>'; if(k < s.keys.length - 1) keysHtml += '+'; }
     item.innerHTML = keysHtml + '<span>' + s.desc + '</span>';
     grid.appendChild(item);
   }
@@ -1201,13 +1111,103 @@ function testConnection(){
       $('model').disabled = true;
       $('model').innerHTML = '<option value="">拉取失败</option>';
       $('modelCount').textContent = '';
-      var msg = String(e.message).indexOf('Failed to fetch') >= 0
-        ? '连接失败：CORS 拦截或网络错误（该服务可能不允许浏览器直连）'
-        : '连接失败：' + e.message;
+      var msg = String(e.message).indexOf('Failed to fetch') >= 0 ? '连接失败：CORS 拦截或网络错误（该服务可能不允许浏览器直连）' : '连接失败：' + e.message;
       setConn('err', msg);
       updateMode();
     })
     .then(function(){ $('testBtn').disabled = false; });
+}
+
+/* ================= 用量统计 ================= */
+function recordUsage(tokens, model){
+  try{
+    var usage = JSON.parse(localStorage.getItem('cu-usage') || '{"total":0,"byModel":{},"history":[]}');
+    usage.total = (usage.total || 0) + (tokens || 0);
+    if(!usage.byModel) usage.byModel = {};
+    usage.byModel[model || 'unknown'] = (usage.byModel[model || 'unknown'] || 0) + (tokens || 0);
+    if(!usage.history) usage.history = [];
+    usage.history.push({ t: Date.now(), tokens: tokens || 0, model: model || '' });
+    if(usage.history.length > 200) usage.history = usage.history.slice(-200);
+    localStorage.setItem('cu-usage', JSON.stringify(usage));
+  }catch(e){}
+}
+
+/* ================= AI 吐槽 ================= */
+function getRoast(code, callback){
+  var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
+  if(!useReal){ callback('（演示模式，AI 不吐槽）'); return; }
+  var body = {
+    model: $('model').value, temperature: 0.9, stream: false,
+    messages: [
+      { role: 'system', content: '你是一个嘴很毒但内心善良的前端工程师。用户给你一段 HTML 代码，你用一句不超过 30 字的中文吐槽它。要求：有趣、具体（指出某个设计或代码细节）、不攻击用户本人。' },
+      { role: 'user', content: '吐槽这段代码：\n' + code.slice(0, 4000) }
+    ]
+  };
+  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var txt = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    callback((txt || '').trim() || '（AI 没说话）');
+  }).catch(function(){ callback('（吐槽失败，AI 可能也无语了）'); });
+}
+
+/* ================= 随机灵感 ================= */
+var INSPIRATIONS = [
+  '给猫做的心率监测仪表盘','卖月球土地的单页网站','90 年代复古风格的个人主页','一杯咖啡的倒计时器','宇宙飞船控制面板',
+  '手写风格的日记应用','赛博朋克风格的天气查询','给植物浇水的提醒应用','虚拟宠物养成页面','做数学题的计时挑战',
+  'AI 算命摊','行星运行模拟器','会放烟花的生日祝福页','打地鼠小游戏','颜色渐变生成器',
+  '极简风格的待办清单','一家只卖一种咖啡的店','时间胶囊留言板','按心情推荐的歌单','程序员的自嘲语录墙'
+];
+function randomInspiration(){
+  var idea = INSPIRATIONS[Math.floor(Math.random() * INSPIRATIONS.length)];
+  $('prompt').value = '生成一个' + idea;
+  $('prompt').focus();
+  if(navigator.vibrate) navigator.vibrate(10);
+}
+
+/* ================= 工程导出/导入 ================= */
+function exportProjectJSON(){
+  saveCurrentProject();
+  var p = getActiveProject();
+  if(!p){ alert('没有活动工程'); return; }
+  var data = JSON.stringify(p, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (p.name || 'project') + '-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  addMsg('assistant', '✅ 工程已导出为 JSON 文件。', '可以在其他设备用「导入」恢复。');
+}
+function importProjectJSON(){
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var p = JSON.parse(ev.target.result);
+        if(!p.id || !p.name || !p.components){ alert('文件格式不对，需要是 Code Utopia 导出的工程 JSON'); return; }
+        p.id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        p.name = p.name + ' (导入)';
+        p.updatedAt = Date.now();
+        if(!p.messages) p.messages = [];
+        if(!p.history) p.history = [];
+        state.projects.push(p);
+        state.activeProjectId = p.id;
+        saveProjects();
+        loadActiveProjectIntoState();
+        renderProjects();
+        addMsg('assistant', '✅ 已导入工程：' + p.name, '');
+      }catch(err){ alert('导入失败：' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 /* ================= 生成 ================= */
@@ -1239,17 +1239,15 @@ function generate(){
     state.abort = new AbortController();
     $('overlayText').textContent = '正在调用 ' + $('model').value + (isModify ? ' 修改代码…' : '…');
     var full = '';
-    var systemPrompt = (isModify && hasCode)
-      ? buildModifySystemPrompt(ctx)
+    var systemPrompt = (isModify && hasCode) ? buildModifySystemPrompt(ctx)
       : '你是前端代码生成器。用户用自然语言描述页面，你只返回一个完整 HTML 文件（含 style 和 script），可用 CDN 引入 Tailwind。不要 markdown 代码块，不要解释，直接以 <!DOCTYPE html> 开头。页面要美观、现代、响应式。';
     var body = {
       model: $('model').value,
       temperature: (isModify && hasCode) ? 0.4 : 0.7,
       stream: useStream,
-      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
+      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.filter(function(m){ return m.role === 'user' || m.role === 'assistant'; }).map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
     };
     if(!useStream){
-      // 非流式：一次性返回
       fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
@@ -1259,21 +1257,12 @@ function generate(){
       .then(function(data){
         full = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
         full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
-        // 记录用量
-        if(data.usage && data.usage.total_tokens){
-          recordUsage(data.usage.total_tokens, $('model').value);
-        }
+        if(data.usage && data.usage.total_tokens) recordUsage(data.usage.total_tokens, $('model').value);
         state.lastRawOutput = full;
         applyGenerated(full, p, isModify);
-        if(doRoast){
-          getRoast(full, function(roast){
-            addMsg('assistant', '💬 ' + roast, '');
-          });
-        }
+        if(doRoast) getRoast(full, function(roast){ addMsg('assistant', '💬 ' + roast, ''); });
       })
-      .catch(function(e){
-        addMsg('assistant', '生成失败：' + e.message);
-      })
+      .catch(function(e){ addMsg('assistant', '生成失败：' + e.message); })
       .then(function(){
         stopTimer();
         state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
@@ -1281,7 +1270,6 @@ function generate(){
         showContinueBtn(!!(code && code.trim().length > 100));
       });
     } else {
-      // 流式
       fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
@@ -1297,14 +1285,9 @@ function generate(){
             if(r.done){
               full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
               state.lastRawOutput = full;
-              // 流式没有 usage 字段，估算 tokens（粗略：字符数 / 4）
               recordUsage(Math.round(full.length / 4), $('model').value);
               applyGenerated(full, p, isModify);
-              if(doRoast){
-                getRoast(full, function(roast){
-                  addMsg('assistant', '💬 ' + roast, '');
-                });
-              }
+              if(doRoast) getRoast(full, function(roast){ addMsg('assistant', '💬 ' + roast, ''); });
               return;
             }
             buf += dec.decode(r.value, { stream: true });
@@ -1340,7 +1323,6 @@ function generate(){
       });
     }
   } else {
-    // 演示模式
     if(isModify && hasCode){
       $('overlayText').textContent = '演示模式无法真实修改';
       addMsg('assistant', '演示模式无法基于现有代码修改。', '请先在 API 配置里填 Key、点「测试连接」拉取模型，再打开「修改现有代码」开关。');
@@ -1356,116 +1338,7 @@ function generate(){
       if(idx >= chunks.length){
         state.lastRawOutput = fullDemo;
         applyGenerated(fullDemo, p, false);
-        if(doRoast){
-          addMsg('assistant', '💬 ' + (isModify ? '改了这么多还是这个配色？' : '这配色是调色盘摔了吗？但至少能跑。'), '');
-        }
-        stopTimer();
-        state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
-        showContinueBtn(true);
-        return;
-      }
-      fullDemo += chunks[idx++];
-      setTimeout(next, 16);
-    }
-    next();
-  }
-}
-
-  var isModify = state.modifyMode;
-  var ctx = isModify ? buildModifyContext() : null;
-  var hasCode = ctx && ctx.html;
-
-  addMsg('user', p, isModify ? (hasCode ? '基于当前代码修改' : '修改模式（当前代码为空）') : '');
-  $('prompt').value = '';
-  state.loading = true;
-  $('genBtn').disabled = true;
-  showContinueBtn(false);
-  $('overlay').classList.add('show');
-  $('overlayText').textContent = isModify ? '正在理解现有代码…' : '正在思考页面结构…';
-  startTimer();
-
-  if(isMobile()) switchMobileTab('preview');
-
-  var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
-
-  if(useReal){
-    state.abort = new AbortController();
-    $('overlayText').textContent = '正在调用 ' + $('model').value + (isModify ? ' 修改代码…' : '…');
-    var full = '';
-    var systemPrompt = (isModify && hasCode)
-      ? buildModifySystemPrompt(ctx)
-      : '你是前端代码生成器。用户用自然语言描述页面，你只返回一个完整 HTML 文件（含 style 和 script），可用 CDN 引入 Tailwind。不要 markdown 代码块，不要解释，直接以 <!DOCTYPE html> 开头。页面要美观、现代、响应式。';
-    var body = {
-      model: $('model').value,
-      temperature: (isModify && hasCode) ? 0.4 : 0.7,
-      stream: true,
-      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
-    };
-    fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
-      body: JSON.stringify(body), signal: state.abort.signal
-    })
-    .then(function(resp){
-      if(!resp.ok) throw new Error('API ' + resp.status);
-      var reader = resp.body.getReader();
-      var dec = new TextDecoder();
-      var buf = '';
-      function pump(){
-        return reader.read().then(function(r){
-          if(r.done){
-            full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
-            state.lastRawOutput = full;
-            applyGenerated(full, p, isModify);
-            return;
-          }
-          buf += dec.decode(r.value, { stream: true });
-          var lines = buf.split('\n'); buf = lines.pop() || '';
-          for(var i = 0; i < lines.length; i++){
-            var t = lines[i].trim();
-            if(t.indexOf('data:') !== 0) continue;
-            var d = t.slice(5).trim();
-            if(d === '[DONE]') continue;
-            try{
-              var j = JSON.parse(d);
-              var dd = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
-              if(dd){ full += dd; }
-            }catch(e){}
-          }
-          return pump();
-        });
-      }
-      return pump();
-    })
-    .catch(function(e){
-      if(e.name === 'AbortError') addMsg('assistant', '已停止生成。');
-      else {
-        var m = String(e.message).indexOf('Failed to fetch') >= 0 ? '请求失败：CORS 限制或网络问题。' : e.message;
-        addMsg('assistant', '生成失败：' + m);
-      }
-    })
-    .then(function(){
-      stopTimer();
-      state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
-      var code = getEditorValue();
-      showContinueBtn(!!(code && code.trim().length > 100));
-    });
-  } else {
-    if(isModify && hasCode){
-      $('overlayText').textContent = '演示模式无法真实修改';
-      addMsg('assistant', '演示模式无法基于现有代码修改。', '请先在 API 配置里填 Key、点「测试连接」拉取模型，再打开「修改现有代码」开关。');
-      stopTimer();
-      state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
-      return;
-    }
-    $('overlayText').textContent = '正在渲染页面…';
-    var demo = pickDemo(p);
-    var chunks = demo.match(/[\s\S]{1,60}/g) || [demo];
-    var idx = 0, fullDemo = '';
-    function next(){
-      if(idx >= chunks.length){
-        state.lastRawOutput = fullDemo;
-        applyGenerated(fullDemo, p, false);
+        if(doRoast) addMsg('assistant', '💬 这配色是调色盘摔了吗？但至少能跑。', '');
         stopTimer();
         state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
         showContinueBtn(true);
@@ -1482,10 +1355,7 @@ function generate(){
 function continueGenerate(){
   if(state.loading) return;
   var currentCode = getEditorValue();
-  if(!currentCode || !currentCode.trim()){
-    addMsg('assistant', '当前没有可续写的代码。', '请先生成一部分代码再试。');
-    return;
-  }
+  if(!currentCode || !currentCode.trim()){ addMsg('assistant', '当前没有可续写的代码。', '请先生成一部分代码再试。'); return; }
   if(state.modifyMode){ onModifyToggle(false); }
 
   addMsg('user', '⏩ 继续生成后续代码', '从当前代码末尾接着写，不重复已有内容');
@@ -1536,6 +1406,7 @@ function continueGenerate(){
             var merged = currentCode + appended;
             merged = merged.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
             state.lastRawOutput = merged;
+            recordUsage(Math.round(appended.length / 4), $('model').value);
             var comps = smartSplit(merged);
             state.components = comps;
             state.activeComp = 0;
@@ -1590,8 +1461,9 @@ function applyGenerated(html, prompt, isModify){
   renderComponents();
   refreshPreview();
   snapshot(prompt);
-  state.messages.push({ role: 'assistant', content: html, display: (isModify ? '已根据你的需求修改现有代码。' : '页面已生成，已智能分区为 ' + comps.length + ' 个组件。'), sub: '耗时 ' + state.lastDuration.toFixed(1) + ' 秒' });
-  // 不用 addMsg，因为上面已经 push 了，直接渲染
+  var display = (isModify ? '已根据你的需求修改现有代码。' : '页面已生成，已智能分区为 ' + comps.length + ' 个组件。');
+  var sub = '耗时 ' + state.lastDuration.toFixed(1) + ' 秒';
+  state.messages.push({ role: 'assistant', content: html, display: display, sub: sub });
   var msgs = $('msgs');
   var last = state.messages[state.messages.length - 1];
   var div = document.createElement('div');
@@ -1788,8 +1660,8 @@ function resetViewport(){
         var mask = document.createElement('div');
         mask.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;cursor:' + getComputedStyle(handle).cursor + ';touch-action:none';
         document.body.appendChild(mask);
-        var wrapW = $('pvWrap').clientWidth - 20;
-        var wrapH = $('pvWrap').clientHeight - 20;
+        var wrapW = $('pvWrap').clientWidth - 24;
+        var wrapH = $('pvWrap').clientHeight - 24;
         var activePointerId = e.pointerId;
         function onMove(ev){
           if(ev.pointerId !== undefined && activePointerId !== undefined && ev.pointerId !== activePointerId) return;
@@ -1841,8 +1713,7 @@ function getActiveSelectable(){
   return state.pasteTarget;
 }
 function doCopy(){
-  var el = getActiveSelectable();
-  var text = '';
+  var el = getActiveSelectable(); var text = '';
   if(state.editorReady && state.editor.hasTextFocus && state.editor.hasTextFocus()){
     var sel = state.editor.getSelection();
     if(sel && !sel.isEmpty()) text = state.editor.getModel().getValueInRange(sel);
@@ -1862,11 +1733,7 @@ function doCut(){
   if(!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')){ hideCopyMenu(); return; }
   var start = el.selectionStart || 0, end = el.selectionEnd || 0;
   var text = el.value.slice(start, end);
-  if(text){
-    copyText(text);
-    el.value = el.value.slice(0, start) + el.value.slice(end);
-    el.selectionStart = el.selectionEnd = start;
-  }
+  if(text){ copyText(text); el.value = el.value.slice(0, start) + el.value.slice(end); el.selectionStart = el.selectionEnd = start; }
   hideCopyMenu();
 }
 function doPaste(){
@@ -1940,7 +1807,7 @@ document.addEventListener('touchstart', function(e){
   if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu();
 }, { passive: true });
 
-/* ================= 输入监听 + 启动 ================= */
+/* ================= 输入监听 ================= */
 (function(){
   var apiKey = $('apiKey'), baseUrl = $('baseUrl'), model = $('model'), profileName = $('profileName');
   function onChange(){ updateMode(); }
@@ -1958,13 +1825,19 @@ document.addEventListener('touchstart', function(e){
   if(prompt) prompt.addEventListener('keydown', function(e){
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); generate(); }
   });
+  // 流式/吐槽开关持久化
+  try{
+    var sm = localStorage.getItem('cu-stream-mode');
+    if(sm !== null && $('streamMode')) $('streamMode').checked = sm === '1';
+    var rm = localStorage.getItem('cu-roast-mode');
+    if(rm !== null && $('roastMode')) $('roastMode').checked = rm === '1';
+  }catch(e){}
+  if($('streamMode')) $('streamMode').addEventListener('change', function(){ localStorage.setItem('cu-stream-mode', this.checked ? '1' : '0'); });
+  if($('roastMode')) $('roastMode').addEventListener('change', function(){ localStorage.setItem('cu-roast-mode', this.checked ? '1' : '0'); });
 })();
 
 document.addEventListener('keydown', function(e){
-  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.key !== '?'){
-    if(e.key === 'Escape') e.target.blur();
-    return;
-  }
+  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.key !== '?'){ if(e.key === 'Escape') e.target.blur(); return; }
   var ctrl = e.ctrlKey || e.metaKey;
   if(ctrl && e.key === 'f'){ e.preventDefault(); toggleSearch(); }
   else if(ctrl && e.key === 's'){ e.preventDefault(); manualSnapshot(); }
@@ -1972,28 +1845,24 @@ document.addEventListener('keydown', function(e){
   else if(ctrl && e.key === 'm'){ e.preventDefault(); mergeToSingleHtml(); }
   else if(ctrl && e.key === '/'){ e.preventDefault(); if(isMobile()) switchMobileTab(state.mobileTab === 'chat' ? 'code' : (state.mobileTab === 'code' ? 'preview' : 'chat')); }
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
-  else if(e.key === 'Escape'){
-    closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu();
-    closeRenameProject(); closeEditTemplate();
-    $('colorPalette').classList.remove('show');
-  }
+  else if(e.key === 'Escape'){ closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); $('colorPalette').classList.remove('show'); }
 });
 
 window.addEventListener('load', function(){
   console.log('🚀 开始初始化...');
-  try { loadTemplates(); console.log('✓ loadTemplates'); } catch(e){ console.error('loadTemplates:', e); }
-  try { loadProjects(); console.log('✓ loadProjects'); } catch(e){ console.error('loadProjects:', e); }
-  try { loadKeyProfiles(); console.log('✓ loadKeyProfiles'); } catch(e){ console.error('loadKeyProfiles:', e); }
-  try { loadActiveProjectIntoState(); console.log('✓ loadActiveProjectIntoState'); } catch(e){ console.error('loadActiveProjectIntoState:', e); }
-  try { initEditor(); console.log('✓ initEditor'); } catch(e){ console.error('initEditor:', e); }
+  try { loadTemplates(); } catch(e){ console.error('loadTemplates:', e); }
+  try { loadProjects(); } catch(e){ console.error('loadProjects:', e); }
+  try { loadKeyProfiles(); } catch(e){ console.error('loadKeyProfiles:', e); }
+  try { loadActiveProjectIntoState(); } catch(e){ console.error('loadActiveProjectIntoState:', e); }
+  try { initEditor(); } catch(e){ console.error('initEditor:', e); }
   try{
     var savedModify = localStorage.getItem('cu-modify-mode') === '1';
     var cb = $('modifyMode');
     if(cb){ cb.checked = savedModify; onModifyToggle(savedModify); }
   }catch(e){}
-  try { if(state.messages.length === 0) renderGuide(); else renderMessages(); console.log('✓ renderMessages/Guide'); } catch(e){ console.error(e); }
-  try { refreshPreview(); console.log('✓ refreshPreview'); } catch(e){ console.error('refreshPreview:', e); }
-  try { applyViewport(); console.log('✓ applyViewport'); } catch(e){ console.error('applyViewport:', e); }
+  try { if(state.messages.length === 0) renderGuide(); else renderMessages(); } catch(e){ console.error(e); }
+  try { refreshPreview(); } catch(e){ console.error('refreshPreview:', e); }
+  try { applyViewport(); } catch(e){ console.error('applyViewport:', e); }
   try { if(isMobile()) switchMobileTab('chat'); } catch(e){}
   window.addEventListener('resize', function(){
     try { applyViewport(); } catch(e){}
@@ -2031,173 +1900,3 @@ function renderGuide(){
   msgs.appendChild(g);
 }
 function quickGen(p){ $('prompt').value = p; generate(); }
-var INSPIRATIONS = [
-  '给猫做的心率监测仪表盘',
-  '卖月球土地的单页网站',
-  '90 年代复古风格的个人主页',
-  '一杯咖啡的倒计时器',
-  '宇宙飞船控制面板',
-  '手写风格的日记应用',
-  '赛博朋克风格的天气查询',
-  '给植物浇水的提醒应用',
-  '虚拟宠物养成页面',
-  '做数学题的计时挑战',
-  'AI 算命摊',
-  '行星运行模拟器',
-  '会放烟花的生日祝福页',
-  '打地鼠小游戏',
-  '颜色渐变生成器',
-  '极简风格的待办清单',
-  '一家只卖一种咖啡的店',
-  '时间胶囊留言板',
-  '按心情推荐的歌单',
-  '程序员的自嘲语录墙'
-];
-function randomInspiration(){
-  var idea = INSPIRATIONS[Math.floor(Math.random() * INSPIRATIONS.length)];
-  $('prompt').value = '生成一个' + idea;
-  $('prompt').focus();
-  if(navigator.vibrate) navigator.vibrate(10);
-}
-/* ================= 工程导出/导入 ================= */
-function exportProjectJSON(){
-  saveCurrentProject();
-  var p = getActiveProject();
-  if(!p){ alert('没有活动工程'); return; }
-  var data = JSON.stringify(p, null, 2);
-  var blob = new Blob([data], { type: 'application/json' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (p.name || 'project') + '-' + new Date().toISOString().slice(0,10) + '.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
-  addMsg('assistant', '✅ 工程已导出为 JSON 文件。', '可以在其他设备用「导入」恢复。');
-}
-
-function importProjectJSON(){
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json,application/json';
-  input.onchange = function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      try{
-        var p = JSON.parse(ev.target.result);
-        if(!p.id || !p.name || !p.components){
-          alert('文件格式不对，需要是 Code Utopia 导出的工程 JSON');
-          return;
-        }
-        p.id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-        p.name = p.name + ' (导入)';
-        p.updatedAt = Date.now();
-        if(!p.messages) p.messages = [];
-        if(!p.history) p.history = [];
-        state.projects.push(p);
-        state.activeProjectId = p.id;
-        saveProjects();
-        loadActiveProjectIntoState();
-        renderProjects();
-        addMsg('assistant', '✅ 已导入工程：' + p.name, '');
-      }catch(err){
-        alert('导入失败：' + err.message);
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-
-/* ================= 历史搜索 ================= */
-function filterHistory(q){
-  q = (q || '').toLowerCase().trim();
-  var items = document.querySelectorAll('#histList .hist-item');
-  for(var i = 0; i < items.length; i++){
-    var text = items[i].textContent.toLowerCase();
-    items[i].style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
-  }
-}
-
-/* ================= 随机灵感 ================= */
-var INSPIRATIONS = [
-  '给猫做的心率监测仪表盘',
-  '卖月球土地的单页网站',
-  '90 年代复古风格的个人主页',
-  '一杯咖啡的倒计时器',
-  '宇宙飞船控制面板',
-  '手写风格的日记应用',
-  '赛博朋克风格的天气查询',
-  '给植物浇水的提醒应用',
-  '虚拟宠物养成页面',
-  '做数学题的计时挑战',
-  'AI 算命摊',
-  '行星运行模拟器',
-  '会放烟花的生日祝福页',
-  '打地鼠小游戏',
-  '颜色渐变生成器',
-  '极简风格的待办清单',
-  '一家只卖一种咖啡的店',
-  '时间胶囊留言板',
-  '按心情推荐的歌单',
-  '程序员的自嘲语录墙'
-];
-function randomInspiration(){
-  var idea = INSPIRATIONS[Math.floor(Math.random() * INSPIRATIONS.length)];
-  $('prompt').value = '生成一个' + idea;
-  $('prompt').focus();
-  if(navigator.vibrate) navigator.vibrate(10);
-}
-
-/* ================= AI 吐槽 ================= */
-function getRoast(code, callback){
-  var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
-  if(!useReal){ callback('（演示模式，AI 不吐槽）'); return; }
-  var body = {
-    model: $('model').value,
-    temperature: 0.9,
-    stream: false,
-    messages: [
-      { role: 'system', content: '你是一个嘴很毒但内心善良的前端工程师。用户给你一段 HTML 代码，你用一句不超过 30 字的中文吐槽它。要求：有趣、具体（指出某个设计或代码细节）、不攻击用户本人。' },
-      { role: 'user', content: '吐槽这段代码：\n' + code.slice(0, 4000) }
-    ]
-  };
-  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
-    body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); }).then(function(data){
-    var txt = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    callback((txt || '').trim() || '（AI 没说话）');
-  }).catch(function(){ callback('（吐槽失败，AI 可能也无语了）'); });
-}
-
-/* ================= 用量统计 ================= */
-function recordUsage(tokens, model){
-  try{
-    var usage = JSON.parse(localStorage.getItem('cu-usage') || '{"total":0,"byModel":{},"history":[]}');
-    usage.total = (usage.total || 0) + (tokens || 0);
-    if(!usage.byModel) usage.byModel = {};
-    usage.byModel[model || 'unknown'] = (usage.byModel[model || 'unknown'] || 0) + (tokens || 0);
-    if(!usage.history) usage.history = [];
-    usage.history.push({ t: Date.now(), tokens: tokens || 0, model: model || '' });
-    if(usage.history.length > 200) usage.history = usage.history.slice(-200);
-    localStorage.setItem('cu-usage', JSON.stringify(usage));
-  }catch(e){}
-}
-
-/* ================= 流式开关 & 吐槽开关 持久化 ================= */
-(function(){
-  try{
-    var sm = localStorage.getItem('cu-stream-mode');
-    if(sm !== null && $('streamMode')) $('streamMode').checked = sm === '1';
-    var rm = localStorage.getItem('cu-roast-mode');
-    if(rm !== null && $('roastMode')) $('roastMode').checked = rm === '1';
-  }catch(e){}
-  if($('streamMode')) $('streamMode').addEventListener('change', function(){
-    localStorage.setItem('cu-stream-mode', this.checked ? '1' : '0');
-  });
-  if($('roastMode')) $('roastMode').addEventListener('change', function(){
-    localStorage.setItem('cu-roast-mode', this.checked ? '1' : '0');
-  });
-})();
