@@ -1219,6 +1219,161 @@ function generate(){
   var isModify = state.modifyMode;
   var ctx = isModify ? buildModifyContext() : null;
   var hasCode = ctx && ctx.html;
+  var useStream = $('streamMode') ? $('streamMode').checked : true;
+  var doRoast = $('roastMode') ? $('roastMode').checked : false;
+
+  addMsg('user', p, isModify ? (hasCode ? '基于当前代码修改' : '修改模式（当前代码为空）') : '');
+  $('prompt').value = '';
+  state.loading = true;
+  $('genBtn').disabled = true;
+  showContinueBtn(false);
+  $('overlay').classList.add('show');
+  $('overlayText').textContent = isModify ? '正在理解现有代码…' : '正在思考页面结构…';
+  startTimer();
+
+  if(isMobile()) switchMobileTab('preview');
+
+  var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
+
+  if(useReal){
+    state.abort = new AbortController();
+    $('overlayText').textContent = '正在调用 ' + $('model').value + (isModify ? ' 修改代码…' : '…');
+    var full = '';
+    var systemPrompt = (isModify && hasCode)
+      ? buildModifySystemPrompt(ctx)
+      : '你是前端代码生成器。用户用自然语言描述页面，你只返回一个完整 HTML 文件（含 style 和 script），可用 CDN 引入 Tailwind。不要 markdown 代码块，不要解释，直接以 <!DOCTYPE html> 开头。页面要美观、现代、响应式。';
+    var body = {
+      model: $('model').value,
+      temperature: (isModify && hasCode) ? 0.4 : 0.7,
+      stream: useStream,
+      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
+    };
+    if(!useStream){
+      // 非流式：一次性返回
+      fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+        body: JSON.stringify(body)
+      })
+      .then(function(resp){ if(!resp.ok) throw new Error('API ' + resp.status); return resp.json(); })
+      .then(function(data){
+        full = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
+        // 记录用量
+        if(data.usage && data.usage.total_tokens){
+          recordUsage(data.usage.total_tokens, $('model').value);
+        }
+        state.lastRawOutput = full;
+        applyGenerated(full, p, isModify);
+        if(doRoast){
+          getRoast(full, function(roast){
+            addMsg('assistant', '💬 ' + roast, '');
+          });
+        }
+      })
+      .catch(function(e){
+        addMsg('assistant', '生成失败：' + e.message);
+      })
+      .then(function(){
+        stopTimer();
+        state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
+        var code = getEditorValue();
+        showContinueBtn(!!(code && code.trim().length > 100));
+      });
+    } else {
+      // 流式
+      fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+        body: JSON.stringify(body), signal: state.abort.signal
+      })
+      .then(function(resp){
+        if(!resp.ok) throw new Error('API ' + resp.status);
+        var reader = resp.body.getReader();
+        var dec = new TextDecoder();
+        var buf = '';
+        function pump(){
+          return reader.read().then(function(r){
+            if(r.done){
+              full = full.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
+              state.lastRawOutput = full;
+              // 流式没有 usage 字段，估算 tokens（粗略：字符数 / 4）
+              recordUsage(Math.round(full.length / 4), $('model').value);
+              applyGenerated(full, p, isModify);
+              if(doRoast){
+                getRoast(full, function(roast){
+                  addMsg('assistant', '💬 ' + roast, '');
+                });
+              }
+              return;
+            }
+            buf += dec.decode(r.value, { stream: true });
+            var lines = buf.split('\n'); buf = lines.pop() || '';
+            for(var i = 0; i < lines.length; i++){
+              var t = lines[i].trim();
+              if(t.indexOf('data:') !== 0) continue;
+              var d = t.slice(5).trim();
+              if(d === '[DONE]') continue;
+              try{
+                var j = JSON.parse(d);
+                var dd = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+                if(dd){ full += dd; }
+              }catch(e){}
+            }
+            return pump();
+          });
+        }
+        return pump();
+      })
+      .catch(function(e){
+        if(e.name === 'AbortError') addMsg('assistant', '已停止生成。');
+        else {
+          var m = String(e.message).indexOf('Failed to fetch') >= 0 ? '请求失败：CORS 限制或网络问题。' : e.message;
+          addMsg('assistant', '生成失败：' + m);
+        }
+      })
+      .then(function(){
+        stopTimer();
+        state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show'); state.abort = null;
+        var code = getEditorValue();
+        showContinueBtn(!!(code && code.trim().length > 100));
+      });
+    }
+  } else {
+    // 演示模式
+    if(isModify && hasCode){
+      $('overlayText').textContent = '演示模式无法真实修改';
+      addMsg('assistant', '演示模式无法基于现有代码修改。', '请先在 API 配置里填 Key、点「测试连接」拉取模型，再打开「修改现有代码」开关。');
+      stopTimer();
+      state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
+      return;
+    }
+    $('overlayText').textContent = '正在渲染页面…';
+    var demo = pickDemo(p);
+    var chunks = demo.match(/[\s\S]{1,60}/g) || [demo];
+    var idx = 0, fullDemo = '';
+    function next(){
+      if(idx >= chunks.length){
+        state.lastRawOutput = fullDemo;
+        applyGenerated(fullDemo, p, false);
+        if(doRoast){
+          addMsg('assistant', '💬 ' + (isModify ? '改了这么多还是这个配色？' : '这配色是调色盘摔了吗？但至少能跑。'), '');
+        }
+        stopTimer();
+        state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
+        showContinueBtn(true);
+        return;
+      }
+      fullDemo += chunks[idx++];
+      setTimeout(next, 16);
+    }
+    next();
+  }
+}
+
+  var isModify = state.modifyMode;
+  var ctx = isModify ? buildModifyContext() : null;
+  var hasCode = ctx && ctx.html;
 
   addMsg('user', p, isModify ? (hasCode ? '基于当前代码修改' : '修改模式（当前代码为空）') : '');
   $('prompt').value = '';
@@ -1856,6 +2011,7 @@ function renderGuide(){
   var iconTimer = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
   var iconList = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
   var iconDash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>';
+  var iconDice = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>';
   g.innerHTML =
     '<div class="orb">' + iconSpark + '</div>' +
     '<h3>开始创造</h3>' +
@@ -1870,7 +2026,178 @@ function renderGuide(){
     '<button class="qcard" onclick="quickGen(\'生成一个番茄钟计时器，圆形进度环\')"><span class="ic">' + iconTimer + '</span><div class="txt"><b>番茄钟</b><span>圆形进度 · 倒计时</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个现代待办清单应用\')"><span class="ic">' + iconList + '</span><div class="txt"><b>待办清单</b><span>增删改 · 圆角卡片</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个 SaaS 数据仪表盘\')"><span class="ic">' + iconDash + '</span><div class="txt"><b>数据仪表盘</b><span>导航 · 卡片 · 图表</span></div><span class="arrow">→</span></button>' +
+    '<button class="qcard" onclick="randomInspiration()"><span class="ic">' + iconDice + '</span><div class="txt"><b>随机灵感</b><span>不知道做什么？点我随机来一个</span></div><span class="arrow">→</span></button>' +
     '</div>';
   msgs.appendChild(g);
 }
 function quickGen(p){ $('prompt').value = p; generate(); }
+var INSPIRATIONS = [
+  '给猫做的心率监测仪表盘',
+  '卖月球土地的单页网站',
+  '90 年代复古风格的个人主页',
+  '一杯咖啡的倒计时器',
+  '宇宙飞船控制面板',
+  '手写风格的日记应用',
+  '赛博朋克风格的天气查询',
+  '给植物浇水的提醒应用',
+  '虚拟宠物养成页面',
+  '做数学题的计时挑战',
+  'AI 算命摊',
+  '行星运行模拟器',
+  '会放烟花的生日祝福页',
+  '打地鼠小游戏',
+  '颜色渐变生成器',
+  '极简风格的待办清单',
+  '一家只卖一种咖啡的店',
+  '时间胶囊留言板',
+  '按心情推荐的歌单',
+  '程序员的自嘲语录墙'
+];
+function randomInspiration(){
+  var idea = INSPIRATIONS[Math.floor(Math.random() * INSPIRATIONS.length)];
+  $('prompt').value = '生成一个' + idea;
+  $('prompt').focus();
+  if(navigator.vibrate) navigator.vibrate(10);
+}
+/* ================= 工程导出/导入 ================= */
+function exportProjectJSON(){
+  saveCurrentProject();
+  var p = getActiveProject();
+  if(!p){ alert('没有活动工程'); return; }
+  var data = JSON.stringify(p, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (p.name || 'project') + '-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  addMsg('assistant', '✅ 工程已导出为 JSON 文件。', '可以在其他设备用「导入」恢复。');
+}
+
+function importProjectJSON(){
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var p = JSON.parse(ev.target.result);
+        if(!p.id || !p.name || !p.components){
+          alert('文件格式不对，需要是 Code Utopia 导出的工程 JSON');
+          return;
+        }
+        p.id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        p.name = p.name + ' (导入)';
+        p.updatedAt = Date.now();
+        if(!p.messages) p.messages = [];
+        if(!p.history) p.history = [];
+        state.projects.push(p);
+        state.activeProjectId = p.id;
+        saveProjects();
+        loadActiveProjectIntoState();
+        renderProjects();
+        addMsg('assistant', '✅ 已导入工程：' + p.name, '');
+      }catch(err){
+        alert('导入失败：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ================= 历史搜索 ================= */
+function filterHistory(q){
+  q = (q || '').toLowerCase().trim();
+  var items = document.querySelectorAll('#histList .hist-item');
+  for(var i = 0; i < items.length; i++){
+    var text = items[i].textContent.toLowerCase();
+    items[i].style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
+  }
+}
+
+/* ================= 随机灵感 ================= */
+var INSPIRATIONS = [
+  '给猫做的心率监测仪表盘',
+  '卖月球土地的单页网站',
+  '90 年代复古风格的个人主页',
+  '一杯咖啡的倒计时器',
+  '宇宙飞船控制面板',
+  '手写风格的日记应用',
+  '赛博朋克风格的天气查询',
+  '给植物浇水的提醒应用',
+  '虚拟宠物养成页面',
+  '做数学题的计时挑战',
+  'AI 算命摊',
+  '行星运行模拟器',
+  '会放烟花的生日祝福页',
+  '打地鼠小游戏',
+  '颜色渐变生成器',
+  '极简风格的待办清单',
+  '一家只卖一种咖啡的店',
+  '时间胶囊留言板',
+  '按心情推荐的歌单',
+  '程序员的自嘲语录墙'
+];
+function randomInspiration(){
+  var idea = INSPIRATIONS[Math.floor(Math.random() * INSPIRATIONS.length)];
+  $('prompt').value = '生成一个' + idea;
+  $('prompt').focus();
+  if(navigator.vibrate) navigator.vibrate(10);
+}
+
+/* ================= AI 吐槽 ================= */
+function getRoast(code, callback){
+  var useReal = $('apiKey').value.trim() && state.connected && $('model').value;
+  if(!useReal){ callback('（演示模式，AI 不吐槽）'); return; }
+  var body = {
+    model: $('model').value,
+    temperature: 0.9,
+    stream: false,
+    messages: [
+      { role: 'system', content: '你是一个嘴很毒但内心善良的前端工程师。用户给你一段 HTML 代码，你用一句不超过 30 字的中文吐槽它。要求：有趣、具体（指出某个设计或代码细节）、不攻击用户本人。' },
+      { role: 'user', content: '吐槽这段代码：\n' + code.slice(0, 4000) }
+    ]
+  };
+  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var txt = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    callback((txt || '').trim() || '（AI 没说话）');
+  }).catch(function(){ callback('（吐槽失败，AI 可能也无语了）'); });
+}
+
+/* ================= 用量统计 ================= */
+function recordUsage(tokens, model){
+  try{
+    var usage = JSON.parse(localStorage.getItem('cu-usage') || '{"total":0,"byModel":{},"history":[]}');
+    usage.total = (usage.total || 0) + (tokens || 0);
+    if(!usage.byModel) usage.byModel = {};
+    usage.byModel[model || 'unknown'] = (usage.byModel[model || 'unknown'] || 0) + (tokens || 0);
+    if(!usage.history) usage.history = [];
+    usage.history.push({ t: Date.now(), tokens: tokens || 0, model: model || '' });
+    if(usage.history.length > 200) usage.history = usage.history.slice(-200);
+    localStorage.setItem('cu-usage', JSON.stringify(usage));
+  }catch(e){}
+}
+
+/* ================= 流式开关 & 吐槽开关 持久化 ================= */
+(function(){
+  try{
+    var sm = localStorage.getItem('cu-stream-mode');
+    if(sm !== null && $('streamMode')) $('streamMode').checked = sm === '1';
+    var rm = localStorage.getItem('cu-roast-mode');
+    if(rm !== null && $('roastMode')) $('roastMode').checked = rm === '1';
+  }catch(e){}
+  if($('streamMode')) $('streamMode').addEventListener('change', function(){
+    localStorage.setItem('cu-stream-mode', this.checked ? '1' : '0');
+  });
+  if($('roastMode')) $('roastMode').addEventListener('change', function(){
+    localStorage.setItem('cu-roast-mode', this.checked ? '1' : '0');
+  });
+})();
