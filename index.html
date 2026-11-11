@@ -93,6 +93,13 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .box textarea{width:100%;height:80px;padding:13px 14px;background:transparent;color:#e8ecf4;border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6;-webkit-user-select:text;user-select:text}
 .box textarea:focus{outline:none}
 .box textarea::placeholder{color:#3f4759}
+.attach-bar{display:flex;gap:6px;padding:8px 10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2)}
+.attach-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:11px;color:#c9d1e3;max-width:180px}
+.attach-item img{width:28px;height:28px;object-fit:cover;border-radius:4px;flex-shrink:0}
+.attach-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attach-item .rm{cursor:pointer;color:#5a6478;font-size:14px;padding:0 3px;flex-shrink:0}
+.attach-item .rm:hover{color:#fca5a5}
+.attach-warn{font-size:10.5px;color:#fcd34d;padding:4px 10px}
 .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06);gap:8px;flex-wrap:wrap}
 .modify-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:#8b94a8;cursor:pointer;user-select:none;padding:6px 8px;border-radius:6px;border:1px solid transparent;transition:all .15s}
 .modify-toggle input{accent-color:#b0b8c8;cursor:pointer;width:14px;height:14px}
@@ -113,6 +120,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .tool{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0}
 .tool:active{transform:scale(.95)}
 .tool.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.08)}
+.tool.danger:hover{border-color:rgba(239,68,68,.5);color:#fca5a5}
 .tool svg{width:13px;height:13px}
 .comp-layout{flex:1;display:flex;gap:8px;min-height:0;overflow:hidden}
 .comp-side{width:170px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;backdrop-filter:blur(14px)}
@@ -212,7 +220,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .hist-item .p{font-size:12px;color:#c9d1e3;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;padding-right:22px}
 .hist-item .t{font-size:10px;color:#5a6478;margin-top:4px;font-family:monospace}
 .hist-empty{text-align:center;color:#5a6478;font-size:12px;padding:30px 10px;line-height:1.7}
-/* Diff 视图 */
 .diff-view{position:fixed;inset:0;z-index:99996;background:rgba(5,5,6,.95);backdrop-filter:blur(20px);display:none;flex-direction:column}
 .diff-view.show{display:flex}
 .diff-head{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;padding-top:calc(14px + env(safe-area-inset-top))}
@@ -223,22 +230,19 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .diff-line.add{background:rgba(34,197,94,.15);color:#86efac;border-left:3px solid #22c55e}
 .diff-line.del{background:rgba(239,68,68,.15);color:#fca5a5;border-left:3px solid #ef4444;text-decoration:line-through;opacity:.85}
 .diff-line.same{color:#5a6478}
-/* 作品墙 */
 .gallery{position:fixed;inset:0;z-index:99995;background:rgba(5,5,6,.97);backdrop-filter:blur(30px);display:none;flex-direction:column;background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12), transparent 55%)}
 .gallery.show{display:flex}
-.gallery-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;padding-top:calc(16px + env(safe-area-inset-top))}
+.gallery-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;padding-top:calc(16px + env(safe-area-inset-top));gap:8px;flex-wrap:wrap}
 .gallery-head h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
 .gallery-head .close{cursor:pointer;padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#c9d1e3;font-size:13px;font-family:inherit}
 .gallery-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
 .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.gallery-card{background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .18s;backdrop-filter:blur(14px)}
-.gallery-card:active{transform:scale(.98)}
+.gallery-card{background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;transition:all .18s;backdrop-filter:blur(14px)}
 .gallery-card .thumb{height:140px;background:#fff;overflow:hidden;position:relative}
 .gallery-card .thumb iframe{width:100%;height:100%;border:none;pointer-events:none;transform:scale(.5);transform-origin:top left;width:200%;height:200%}
 .gallery-card .info{padding:12px;font-size:12px}
 .gallery-card .info b{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:#e8ecf4}
 .gallery-card .info span{color:#5a6478;font-size:11px}
-/* 元素检查器 */
 .inspector{position:absolute;top:0;right:0;width:300px;height:100%;background:rgba(8,8,10,.95);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.08);z-index:46;display:none;flex-direction:column}
 .inspector.show{display:flex}
 .inspector-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:#c9d1e3}
@@ -252,7 +256,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .inspector-prop input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .inspector-actions{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px}
 .inspector-actions button{flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#c9d1e3;cursor:pointer;font-size:12px;font-family:inherit}
-/* 一句话改风格 */
 .style-bar{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(20,20,24,.3);overflow-x:auto;flex-shrink:0}
 .style-bar::-webkit-scrollbar{display:none}
 .style-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#8b94a8;cursor:pointer;font-size:11.5px;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:all .15s;min-height:32px}
@@ -417,7 +420,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 <body>
 <div id="errbar"><span class="x" onclick="document.getElementById('errbar').style.display='none'">✕</span><b>错误：</b><span id="errtext"></span></div>
 
-<!-- 工程视图 -->
 <div id="projectsView">
   <div class="pv-head">
     <h1><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>我的工程</h1>
@@ -428,6 +430,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
       <input type="text" id="projSearch" placeholder="搜索工程名称…" oninput="renderProjects()">
       <button class="tool" onclick="createProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新建</button>
       <button class="tool" onclick="openGallery()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>作品墙</button>
+      <button class="tool" onclick="openFavorites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</button>
     </div>
     <div class="pv-grid" id="projGrid"></div>
   </div>
@@ -478,11 +481,16 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
     <div class="msgs" id="msgs"></div>
     <div class="composer">
       <div class="box">
+        <div class="attach-bar" id="attachBar" style="display:none"></div>
         <textarea id="prompt" placeholder="描述你想要的页面…&#10;例如：一个深色风格的 SaaS 登录页"></textarea>
         <div class="bar">
           <label class="modify-toggle" id="modifyToggle"><input type="checkbox" id="modifyMode" onchange="onModifyToggle(this.checked)"><span>修改代码</span></label>
           <label class="modify-toggle" style="font-size:11px"><input type="checkbox" id="streamMode" checked><span>流式</span></label>
           <label class="modify-toggle" style="font-size:11px"><input type="checkbox" id="roastMode"><span>吐槽</span></label>
+          <button class="btn-sm" id="uploadBtn" onclick="document.getElementById('fileInput').click()" title="上传图片或文件" style="padding:6px 10px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传
+          </button>
+          <input type="file" id="fileInput" accept="image/*,.txt,.md,.html,.css,.js,.json" multiple style="display:none" onchange="handleFileUpload(event)">
           <button class="btn-cont" id="contBtn" onclick="continueGenerate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>继续</button>
           <button class="btn-go" id="genBtn" onclick="generate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>生成</button>
         </div>
@@ -523,6 +531,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <button class="tool" onclick="mergeToSingleHtml()" title="合并为单 HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>合并</button>
         <button class="tool" id="fmtBtn" onclick="formatCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>格式化</button>
         <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
+        <button class="tool" onclick="addCurrentToFavorites()" title="把当前版本加入收藏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</button>
         <button class="tool" onclick="showColorPalette()" title="一键换色板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>换色</button>
         <button class="tool" onclick="showTemplates()" title="Prompt 模板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
       </div>
@@ -582,7 +591,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <div class="rz nw" data-dir="nw"></div><div class="rz ne" data-dir="ne"></div><div class="rz sw" data-dir="sw"></div><div class="rz se" data-dir="se"></div>
       </div>
     </div>
-    <!-- 元素检查器 -->
     <div class="inspector" id="inspector">
       <div class="inspector-head"><span>元素检查</span><span class="close" onclick="toggleInspector()">✕</span></div>
       <div class="inspector-body" id="inspectorBody">
@@ -608,7 +616,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <button onclick="doSelectAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 7 4"/><polyline points="20 7 20 4 17 4"/><polyline points="4 17 4 20 7 20"/><polyline points="20 17 20 20 17 20"/><path d="M9 4h6M9 20h6M4 9v6M20 9v6"/></svg>全选</button>
 </div>
 
-<!-- 模板弹窗 -->
 <div class="modal-mask" id="templateModal">
   <div class="modal">
     <div class="modal-head"><span>Prompt 模板</span><div style="display:flex;gap:8px;align-items:center"><button class="btn-sm" onclick="createNewTemplate()" style="padding:6px 10px;font-size:11.5px">＋ 新建</button><span class="close" onclick="closeTemplates()">✕</span></div></div>
@@ -644,7 +651,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   </div>
 </div>
 
-<!-- Diff 视图 -->
 <div class="diff-view" id="diffView">
   <div class="diff-head">
     <h3 id="diffTitle">版本对比</h3>
@@ -653,11 +659,14 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <div class="diff-body" id="diffBody"></div>
 </div>
 
-<!-- 作品墙 -->
 <div class="gallery" id="gallery">
   <div class="gallery-head">
     <h2><span class="logo" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>作品墙</h2>
-    <button class="close" onclick="closeGallery()">返回</button>
+    <div style="display:flex;gap:8px">
+      <button class="tool" id="galTabHistory" onclick="switchGalleryTab('history')" style="font-size:12px">历史</button>
+      <button class="tool" id="galTabFav" onclick="switchGalleryTab('fav')" style="font-size:12px">收藏</button>
+      <button class="close" onclick="closeGallery()">返回</button>
+    </div>
   </div>
   <div class="gallery-body">
     <div class="gallery-grid" id="galleryGrid"></div>
@@ -668,7 +677,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 
 <div class="kbd-panel" id="kbdPanel" onclick="if(event.target===this)closeKbdPanel()"><div class="kbd-card"><h3>快捷键<span class="close" onclick="closeKbdPanel()">✕</span></h3><div class="kbd-grid" id="kbdGrid"></div></div></div>
 
-<!-- 截图、GIF 录制需要 html2canvas 和 gif.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
