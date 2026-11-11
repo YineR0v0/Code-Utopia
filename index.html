@@ -608,6 +608,14 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <textarea id="prompt" placeholder="描述你想要的页面…&#10;例如：一个深色风格的 SaaS 登录页"></textarea>
         <div class="bar">
           <label class="modify-toggle" id="modifyToggle">
+            <label class="modify-toggle" id="streamToggle" style="font-size:11px">
+  <input type="checkbox" id="streamMode" checked>
+  <span>流式</span>
+</label>
+<label class="modify-toggle" id="roastToggle" style="font-size:11px">
+  <input type="checkbox" id="roastMode">
+  <span>吐槽</span>
+</label>
             <input type="checkbox" id="modifyMode" onchange="onModifyToggle(this.checked)">
             <span>修改现有代码</span>
           </label>
@@ -639,9 +647,13 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
       <span class="close" onclick="toggleSearch()">✕</span>
     </div>
     <div class="hist" id="hist">
-      <div class="hist-head"><span>版本历史</span><span class="close" onclick="toggleHistory()">✕</span></div>
-      <div class="hist-list" id="histList"></div>
-    </div>
+     <div class="hist-head">
+  <span>版本历史</span>
+  <span class="close" onclick="toggleHistory()">✕</span>
+</div>
+<div style="padding:10px 10px 0">
+  <input type="text" id="histSearch" placeholder="搜索历史 prompt…" oninput="filterHistory(this.value)" style="width:100%;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;-webkit-user-select:text;user-select:text">
+</div>
     <div class="code">
       <div class="tools">
         <button class="tool" id="copyBtn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
@@ -651,6 +663,8 @@ background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.12),
         <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
         <button class="tool" onclick="showColorPalette()" title="一键换色板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>换色</button>
         <button class="tool" onclick="showTemplates()" title="Prompt 模板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
+        <button class="tool" onclick="exportProjectJSON()" title="导出工程为 JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出</button>
+<button class="tool" onclick="importProjectJSON()" title="从 JSON 导入工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入</button>
       </div>
       <div class="comp-layout">
         <div class="comp-side">
