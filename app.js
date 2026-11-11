@@ -18,7 +18,14 @@ var state = {
   pasteTarget: null,
   longPressTimer: null,
   editingTemplateIdx: -1,
-  renamingProjectId: null
+  renamingProjectId: null,
+  diffMode: false,
+  diffSelections: [],
+  inspectorActive: false,
+  inspectorTarget: null,
+  inspectorStyles: {},
+  dragSrcIdx: -1,
+  dragOverIdx: -1
 };
 
 function $(id){ return document.getElementById(id); }
@@ -99,10 +106,8 @@ function smartSplit(raw){
   if(!raw || !raw.trim()) return [];
   var text = raw.trim();
   text = text.replace(/^```(?:html|css|js|javascript)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-
   var markedParts = parseMarkedSections(text);
   if(markedParts.length > 0) return markedParts;
-
   var firstMark = text.search(/<!DOCTYPE|<html|<head|<body|<style|<script|@media|@keyframes|[\.\#\w\-\[\]]+\s*\{|\/\/|\/\*/i);
   if(firstMark > 0) text = text.slice(firstMark);
 
@@ -111,7 +116,6 @@ function smartSplit(raw){
   var m;
   var styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi;
   while((m = styleRe.exec(text))) styleBlocks.push(m[1].trim());
-
   var scriptBlocks = [];
   var scriptRe = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
   while((m = scriptRe.exec(text))) scriptBlocks.push(m[1].trim());
@@ -126,7 +130,6 @@ function smartSplit(raw){
     h = h.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi, '');
     headExtras = h.trim();
   }
-
   var bodyContent = '';
   var bodyMatch = text.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   if(bodyMatch){
@@ -135,9 +138,7 @@ function smartSplit(raw){
     b = b.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi, '');
     bodyContent = b.trim();
   }
-
   var hasHtmlDoc = /<!DOCTYPE|<html[\s>]/i.test(text);
-
   if(hasHtmlDoc){
     if(headExtras) comps.push({ name: 'Head 资源', type: 'html', code: headExtras, enabled: true });
     if(bodyContent){
@@ -163,11 +164,9 @@ function smartSplit(raw){
     else if(lang === 'js') comps.push({ name: '交互', type: 'js', code: text, enabled: true });
     else comps.push({ name: '页面', type: 'html', code: text, enabled: true });
   }
-
   if(comps.length === 0) comps.push({ name: '页面', type: detectLanguage(text), code: text, enabled: true });
   return comps;
 }
-
 function parseMarkedSections(text){
   var comps = [];
   var fileMarkers = [];
@@ -189,7 +188,6 @@ function parseMarkedSections(text){
   }
   return [];
 }
-
 function splitBodyIntoSections(html){
   if(!html || !html.trim()) return [];
   var re = /<(section|main|header|footer|nav|aside|article)[^>]*>[\s\S]*?<\/\1>/gi;
@@ -235,10 +233,7 @@ function onModifyToggle(checked){
   }
   try{ localStorage.setItem('cu-modify-mode', checked ? '1' : '0'); }catch(e){}
 }
-function buildModifyContext(){
-  var html = buildPreviewHtml();
-  return { html: html };
-}
+function buildModifyContext(){ return { html: buildPreviewHtml() }; }
 function buildModifySystemPrompt(ctx){
   return [
     '你是前端代码修改助手。用户会给你一份【现有完整代码】和一条【修改需求】。',
@@ -266,6 +261,7 @@ function loadProjects(){
   for(var i = 0; i < state.projects.length; i++){
     if(!state.projects[i].messages) state.projects[i].messages = [];
     if(!state.projects[i].history) state.projects[i].history = [];
+    if(!state.projects[i].gallery) state.projects[i].gallery = [];
   }
   saveProjects();
 }
@@ -275,7 +271,8 @@ function newProjectData(name){
     name: name || '未命名工程', createdAt: Date.now(), updatedAt: Date.now(),
     components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
     history: [], historyIndex: -1,
-    messages: []
+    messages: [],
+    gallery: []
   };
 }
 function saveProjects(){
@@ -327,6 +324,7 @@ function renderProjects(){
   if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
   grid.innerHTML = html;
 }
+/* ================= 工程操作 ================= */
 function createProject(){
   var name = prompt('新工程名称：', '新工程'); if(name === null) return;
   name = name.trim() || '新工程';
@@ -415,7 +413,6 @@ function loadActiveProjectIntoState(){
   renderHistory();
   refreshPreview();
 }
-
 function renderMessages(){
   var msgs = $('msgs');
   msgs.innerHTML = '';
@@ -579,7 +576,6 @@ function populateModels(list){
   $('modelFilter').style.display = list.length > 6 ? 'block' : 'none';
   $('modelFilter').value = '';
   $('modelFilterClear').style.display = 'none';
-
   var currentSel = state.currentModel || '';
   var savedModel = state.keyProfiles[state.activeProfile] ? (state.keyProfiles[state.activeProfile].model || '') : '';
   var finalModel = '';
@@ -591,7 +587,6 @@ function populateModels(list){
   }
   if(finalModel) sel.value = finalModel;
   state.currentModel = sel.value;
-
   if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile] && state.currentModel){
     state.keyProfiles[state.activeProfile].model = state.currentModel;
     saveKeyProfiles();
@@ -656,14 +651,15 @@ function setEditorValue(val, lang){
 var previewTimer;
 function debouncePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 500); }
 
-/* ================= 组件管理 ================= */
+/* ================= 组件管理（含拖拽排序） ================= */
 function renderComponents(){
   var list = $('compList');
   var html = '';
   for(var i = 0; i < state.components.length; i++){
     var c = state.components[i];
     var cls = 'comp-item' + (i === state.activeComp ? ' active' : '') + (c.enabled ? '' : ' disabled');
-    html += '<div class="' + cls + '" onclick="selectComponent(' + i + ')" ondblclick="toggleComponentAt(' + i + ')">' +
+    html += '<div class="' + cls + '" data-idx="' + i + '" draggable="true" onclick="selectComponent(' + i + ')" ondblclick="toggleComponentAt(' + i + ')">' +
+      '<span class="drag-handle" title="拖动排序"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>' +
       '<span class="cdot"></span><span class="cname">' + esc(c.name || '未命名') + '</span>' +
       '<span class="ctype ' + c.type + '">' + c.type.toUpperCase() + '</span></div>';
   }
@@ -673,6 +669,54 @@ function renderComponents(){
   var c = state.components[state.activeComp];
   if(c){ $('compName').value = c.name || ''; $('compType').value = c.type; $('compOrder').textContent = (state.activeComp + 1) + ' / ' + state.components.length; }
   else { $('compName').value = ''; $('compOrder').textContent = ''; }
+  bindComponentDrag();
+}
+function bindComponentDrag(){
+  var items = document.querySelectorAll('#compList .comp-item');
+  for(var i = 0; i < items.length; i++){
+    (function(el){
+      el.addEventListener('dragstart', function(e){
+        state.dragSrcIdx = parseInt(el.getAttribute('data-idx'), 10);
+        el.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try{ e.dataTransfer.setData('text/plain', String(state.dragSrcIdx)); }catch(err){}
+      });
+      el.addEventListener('dragend', function(){
+        el.classList.remove('dragging');
+        var all = document.querySelectorAll('#compList .comp-item');
+        for(var k = 0; k < all.length; k++) all[k].classList.remove('drag-over');
+      });
+      el.addEventListener('dragover', function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        if(idx === state.dragSrcIdx) return;
+        var all = document.querySelectorAll('#compList .comp-item');
+        for(var k = 0; k < all.length; k++) all[k].classList.remove('drag-over');
+        el.classList.add('drag-over');
+        state.dragOverIdx = idx;
+      });
+      el.addEventListener('dragleave', function(){ el.classList.remove('drag-over'); });
+      el.addEventListener('drop', function(e){
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        var from = state.dragSrcIdx;
+        var to = parseInt(el.getAttribute('data-idx'), 10);
+        if(from < 0 || to < 0 || from === to) return;
+        var cur = state.components[state.activeComp];
+        if(cur && state.editorReady) cur.code = getEditorValue();
+        var moved = state.components.splice(from, 1)[0];
+        state.components.splice(to, 0, moved);
+        if(state.activeComp === from) state.activeComp = to;
+        else if(state.activeComp === to) state.activeComp = from;
+        else if(from < state.activeComp && to >= state.activeComp) state.activeComp--;
+        else if(from > state.activeComp && to <= state.activeComp) state.activeComp++;
+        setEditorValue(getActiveCompCode(), compLang(state.components[state.activeComp]));
+        renderComponents();
+        refreshPreview();
+      });
+    })(items[i]);
+  }
 }
 function selectComponent(i){
   if(i < 0 || i >= state.components.length) return;
@@ -761,13 +805,73 @@ function renderHistory(){
     var item = state.history[i];
     var d = new Date(item.time);
     var time = ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
-    var cls = i === state.historyIndex ? 'current' : '';
-    html += '<div class="hist-item ' + cls + '" onclick="restoreHistory(' + i + ')">' +
+    var cls = 'hist-item' + (i === state.historyIndex ? ' current' : '') + (state.diffSelections.indexOf(i) >= 0 ? ' selected' : '');
+    html += '<div class="hist-item ' + cls + '" data-hidx="' + i + '" onclick="onHistoryClick(event, ' + i + ')">' +
+      '<div class="sel-box ' + (state.diffMode ? 'show' : '') + '" onclick="event.stopPropagation();toggleDiffSelection(' + i + ')"></div>' +
       '<div class="v">v' + item.version + (i === state.historyIndex ? ' · 当前' : '') + '</div>' +
       '<div class="p">' + esc(item.prompt || '').slice(0, 80) + '</div>' +
       '<div class="t">' + time + ' · ' + (item.components || []).length + ' 个组件</div></div>';
   }
   list.innerHTML = html;
+}
+function onHistoryClick(e, i){
+  if(state.diffMode){ toggleDiffSelection(i); }
+  else { restoreHistory(i); }
+}
+function toggleDiffSelection(i){
+  var idx = state.diffSelections.indexOf(i);
+  if(idx >= 0) state.diffSelections.splice(idx, 1);
+  else {
+    if(state.diffSelections.length >= 2) state.diffSelections.shift();
+    state.diffSelections.push(i);
+  }
+  renderHistory();
+  var btn = $('doDiffBtn');
+  if(btn) btn.disabled = state.diffSelections.length !== 2;
+}
+function toggleDiffMode(){
+  state.diffMode = !state.diffMode;
+  state.diffSelections = [];
+  var btn = $('diffModeBtn');
+  if(btn) btn.textContent = state.diffMode ? '退出对比' : '对比';
+  var doBtn = $('doDiffBtn');
+  if(doBtn) doBtn.disabled = true;
+  renderHistory();
+}
+function doDiff(){
+  if(state.diffSelections.length !== 2) return;
+  var a = state.history[state.diffSelections[0]];
+  var b = state.history[state.diffSelections[1]];
+  if(!a || !b) return;
+  var textA = (a.components || []).map(function(c){ return c.code; }).join('\n');
+  var textB = (b.components || []).map(function(c){ return c.code; }).join('\n');
+  var diff = simpleDiff(textA, textB);
+  var body = $('diffBody');
+  body.innerHTML = '';
+  for(var i = 0; i < diff.length; i++){
+    var line = document.createElement('div');
+    line.className = 'diff-line ' + diff[i].type;
+    line.textContent = (diff[i].type === 'add' ? '+ ' : diff[i].type === 'del' ? '- ' : '  ') + diff[i].text;
+    body.appendChild(line);
+  }
+  $('diffTitle').textContent = 'v' + a.version + ' → v' + b.version;
+  $('diffView').classList.add('show');
+}
+function closeDiff(){ $('diffView').classList.remove('show'); }
+function simpleDiff(a, b){
+  var la = a.split('\n');
+  var lb = b.split('\n');
+  var result = [];
+  var maxLen = Math.max(la.length, lb.length);
+  for(var i = 0; i < maxLen; i++){
+    var x = la[i], y = lb[i];
+    if(x === y){ if(x !== undefined) result.push({ type: 'same', text: x }); }
+    else {
+      if(x !== undefined) result.push({ type: 'del', text: x });
+      if(y !== undefined) result.push({ type: 'add', text: y });
+    }
+  }
+  return result;
 }
 function filterHistory(q){
   q = (q || '').toLowerCase().trim();
@@ -863,6 +967,348 @@ function searchKeydown(e){
 }
 function clearSearchHighlight(){ $('searchCount').textContent = '0/0'; state.searchResults = []; }
 
+/* ================= 截图 & 复制成图片 ================= */
+function takeScreenshot(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  if(typeof html2canvas === 'undefined'){ alert('截图库未加载，请检查网络'); return; }
+  try{
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    var iframeBody = iframeDoc.body;
+    html2canvas(iframeBody, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas){
+      canvas.toBlob(function(blob){
+        if(!blob) return;
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'screenshot-' + Date.now() + '.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+        addMsg('assistant', '✅ 截图已保存为 PNG。', '已下载到本地');
+      }, 'image/png');
+    });
+  }catch(e){
+    alert('截图失败：' + e.message + '\n可能是页面跨域或 iframe 还未加载完');
+  }
+}
+function copyScreenshotToClipboard(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  if(typeof html2canvas === 'undefined'){ alert('截图库未加载'); return; }
+  try{
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    html2canvas(iframeDoc.body, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas){
+      canvas.toBlob(function(blob){
+        if(!blob) return;
+        if(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem){
+          var item = new ClipboardItem({ 'image/png': blob });
+          navigator.clipboard.write([item]).then(function(){
+            addMsg('assistant', '✅ 图片已复制到剪贴板。', '可以直接粘贴到微信/文档');
+          }).catch(function(){
+            var url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+            addMsg('assistant', '复制到剪贴板失败，已在新窗口打开图片。', '右键保存即可');
+          });
+        } else {
+          var url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+          addMsg('assistant', '浏览器不支持直接复制图片，已在新窗口打开。', '右键保存即可');
+        }
+      }, 'image/png');
+    });
+  }catch(e){ alert('复制失败：' + e.message); }
+}
+
+/* ================= 元素检查器 ================= */
+function toggleInspector(){
+  state.inspectorActive = !state.inspectorActive;
+  var panel = $('inspector');
+  if(panel) panel.classList.toggle('show', state.inspectorActive);
+  if(state.inspectorActive) setupInspector();
+  else teardownInspector();
+}
+function setupInspector(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  try{
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.body.style.cursor = 'crosshair';
+    iframeDoc.addEventListener('click', inspectorClickHandler, true);
+    iframeDoc.addEventListener('mouseover', inspectorHoverHandler, true);
+    addMsg('assistant', '🔍 元素检查已开启。', '点击预览中的元素查看详情');
+  }catch(e){
+    alert('无法访问预览内容：' + e.message);
+  }
+}
+function teardownInspector(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  try{
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.body.style.cursor = '';
+    iframeDoc.removeEventListener('click', inspectorClickHandler, true);
+    iframeDoc.removeEventListener('mouseover', inspectorHoverHandler, true);
+    var last = iframeDoc.querySelector('.__inspector_overlay');
+    if(last) last.remove();
+  }catch(e){}
+  var body = $('inspectorBody');
+  if(body) body.innerHTML = '<div class="inspector-empty">点击预览中的元素查看详情</div>';
+  state.inspectorTarget = null;
+}
+function inspectorHoverHandler(e){
+  e.preventDefault();
+  e.stopPropagation();
+  var el = e.target;
+  if(!el || el.tagName === 'HTML' || el.tagName === 'BODY') return;
+  var iframeDoc = el.ownerDocument;
+  var old = iframeDoc.querySelector('.__inspector_overlay');
+  if(old) old.remove();
+  var rect = el.getBoundingClientRect();
+  var overlay = iframeDoc.createElement('div');
+  overlay.className = '__inspector_overlay';
+  overlay.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #6d5cff;background:rgba(109,92,255,.12);z-index:999999;top:' + rect.top + 'px;left:' + rect.left + 'px;width:' + rect.width + 'px;height:' + rect.height + 'px;';
+  iframeDoc.body.appendChild(overlay);
+}
+function inspectorClickHandler(e){
+  e.preventDefault();
+  e.stopPropagation();
+  var el = e.target;
+  if(!el || el.tagName === 'HTML' || el.tagName === 'BODY') return;
+  state.inspectorTarget = el;
+  var cs = (el.ownerDocument.defaultView || window).getComputedStyle(el);
+  var html = el.outerHTML.slice(0, 500);
+  var body = $('inspectorBody');
+  state.inspectorStyles = {
+    color: cs.color,
+    backgroundColor: cs.backgroundColor,
+    fontSize: cs.fontSize,
+    fontWeight: cs.fontWeight,
+    padding: cs.padding,
+    margin: cs.margin,
+    borderRadius: cs.borderRadius,
+    display: cs.display
+  };
+  body.innerHTML =
+    '<div class="inspector-prop"><label>标签 / ID / Class</label><code>' + esc(el.tagName.toLowerCase()) + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/).join('.') : '') + '</code></div>' +
+    '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(html) + '</code></div>' +
+    '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
+    '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
+    '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
+    '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
+    '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
+    '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
+    '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+}
+function rgbToHex(rgb){
+  if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
+  var m = rgb.match(/\d+/g);
+  if(!m || m.length < 3) return rgb;
+  var hex = '#';
+  for(var i = 0; i < 3; i++){
+    var v = parseInt(m[i], 10).toString(16);
+    hex += v.length === 1 ? '0' + v : v;
+  }
+  return hex;
+}
+function applyInspectorChanges(){
+  if(!state.inspectorTarget){ alert('请先在预览里点选一个元素'); return; }
+  var el = state.inspectorTarget;
+  var color = $('insp_color').value.trim();
+  var bg = $('insp_bg').value.trim();
+  var fs = $('insp_fs').value.trim();
+  var fw = $('insp_fw').value.trim();
+  var pad = $('insp_pad').value.trim();
+  var mar = $('insp_mar').value.trim();
+  var br = $('insp_br').value.trim();
+  if(color) el.style.color = color;
+  if(bg) el.style.backgroundColor = bg;
+  if(fs) el.style.fontSize = fs;
+  if(fw) el.style.fontWeight = fw;
+  if(pad) el.style.padding = pad;
+  if(mar) el.style.margin = mar;
+  if(br) el.style.borderRadius = br;
+  var inlineStyle = el.getAttribute('style') || '';
+  // 同步回代码：只同步当前活动组件的 inline style 部分，简单起见提示手动同步
+  addMsg('assistant', '✅ 已应用修改到预览。', '提示：这只改了预览里的样式，要写回代码请告诉我"把刚才的样式写回代码"');
+}
+
+/* ================= 一句话改风格 ================= */
+var STYLE_PRESETS = [
+  { key: 'cyberpunk', label: '赛博朋克', prompt: '赛博朋克风格：霓虹粉紫、蓝紫渐变、像素字体、故障效果、扫描线背景' },
+  { key: 'minimal', label: '日式极简', prompt: '日式极简风格：大面积留白、米白背景、细黑线条、无衬线字体、克制用色' },
+  { key: '90s', label: '90 年代', prompt: '90 年代网页风格：卡通按钮、闪烁文字、tiled 背景、Comic Sans 字体、彩虹色标题、访客计数器' },
+  { key: 'glass', label: '玻璃拟态', prompt: '玻璃拟态风格：毛玻璃面板、半透明背景、柔和阴影、圆角、渐变光晕' },
+  { key: 'brutalism', label: '粗暴主义', prompt: '粗暴主义风格：粗黑边框、大号纯色块、碰撞字体、无圆角、高对比黑白' },
+  { key: 'dark', label: '暗黑模式', prompt: '暗黑模式：深黑背景、低饱和文字、靛蓝强调、柔和阴影、夜间友好' },
+  { key: 'light', label: '清爽浅色', prompt: '清爽浅色风格：纯白背景、浅灰分区、蓝色强调、大圆角、柔和投影' },
+  { key: 'retro', label: '复古报纸', prompt: '复古报纸风格：米黄背景、衬线字体、黑白配色、分栏布局、复古标题' }
+];
+function initStyleBar(){
+  var bar = $('styleBar');
+  if(!bar) return;
+  bar.innerHTML = '<span style="font-size:11px;color:#5a6478;padding:6px 4px;white-space:nowrap;flex-shrink:0">一句话改风格：</span>';
+  for(var i = 0; i < STYLE_PRESETS.length; i++){
+    var p = STYLE_PRESETS[i];
+    var chip = document.createElement('button');
+    chip.className = 'style-chip';
+    chip.textContent = p.label;
+    (function(pr){ chip.addEventListener('click', function(){ applyStylePreset(pr); }); })(p);
+    bar.appendChild(chip);
+  }
+}
+function applyStylePreset(preset){
+  if(!getActiveProject() && state.components.length === 0){ alert('还没有内容，先生成一个页面'); return; }
+  if(!$('apiKey').value.trim() || !state.connected || !$('model').value){
+    alert('一句话改风格需要真实 API。请先在配置里填 Key、测试连接拉取模型。');
+    return;
+  }
+  var current = buildPreviewHtml();
+  addMsg('user', '改风格：' + preset.label, '');
+  state.loading = true;
+  $('genBtn').disabled = true;
+  $('overlay').classList.add('show');
+  $('overlayText').textContent = '正在改风格为 ' + preset.label + '…';
+  startTimer();
+  if(isMobile()) switchMobileTab('preview');
+
+  var body = {
+    model: $('model').value,
+    temperature: 0.6,
+    stream: false,
+    messages: [
+      { role: 'system', content: '你是前端设计师。用户给你一份现有页面代码，你要把它改成指定的设计风格，保留所有功能和内容，只改视觉。返回完整 HTML，不要 markdown。' },
+      { role: 'user', content: '请把下面的页面改成【' + preset.prompt + '】风格，保留所有功能和文字内容：\n\n' + current }
+    ]
+  };
+  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+    body: JSON.stringify(body)
+  }).then(function(r){ if(!r.ok) throw new Error('API ' + r.status); return r.json(); })
+  .then(function(data){
+    var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    txt = txt.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
+    if(data.usage && data.usage.total_tokens) recordUsage(data.usage.total_tokens, $('model').value);
+    applyGenerated(txt, '改风格：' + preset.label, false);
+  })
+  .catch(function(e){
+    addMsg('assistant', '改风格失败：' + e.message, '');
+  })
+  .then(function(){
+    stopTimer();
+    state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
+  });
+}
+
+/* ================= 暗黑/浅色一键切换 ================= */
+function toggleDarkMode(){
+  if(state.components.length === 0){ alert('还没有内容'); return; }
+  var current = buildPreviewHtml();
+  if(!$('apiKey').value.trim() || !state.connected || !$('model').value){
+    // 无 API 时做简单的颜色反转
+    var reversed = invertColors(current);
+    applyGenerated(reversed, '颜色反转', false);
+    return;
+  }
+  addMsg('user', '切换明暗模式', '');
+  state.loading = true;
+  $('genBtn').disabled = true;
+  $('overlay').classList.add('show');
+  $('overlayText').textContent = '正在切换明暗…';
+  startTimer();
+  var isDark = /background(-color)?\s*:\s*(#0|#1|#2|black|rgb\(0)/i.test(current);
+  var target = isDark ? '浅色（白色背景，深色文字）' : '深色（黑色背景，浅色文字）';
+  var body = {
+    model: $('model').value, temperature: 0.5, stream: false,
+    messages: [
+      { role: 'system', content: '你是前端设计师。把用户的页面切换到' + target + '主题，保留所有功能，只改配色。返回完整 HTML，不要 markdown。' },
+      { role: 'user', content: current }
+    ]
+  };
+  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); })
+  .then(function(data){
+    var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    txt = txt.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
+    applyGenerated(txt, '切换明暗', false);
+  })
+  .catch(function(e){ addMsg('assistant', '切换失败：' + e.message); })
+  .then(function(){
+    stopTimer();
+    state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
+  });
+}
+function invertColors(html){
+  return html.replace(/#([0-9a-f]{6}|[0-9a-f]{3})/gi, function(m, hex){
+    if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    var r = 255 - parseInt(hex.substr(0,2),16);
+    var g = 255 - parseInt(hex.substr(2,2),16);
+    var b = 255 - parseInt(hex.substr(4,2),16);
+    return '#' + [r,g,b].map(function(x){ var h = x.toString(16); return h.length===1?'0'+h:h; }).join('');
+  });
+}
+
+/* ================= 作品墙 ================= */
+function openGallery(){
+  renderGallery();
+  $('gallery').classList.add('show');
+}
+function closeGallery(){ $('gallery').classList.remove('show'); }
+function renderGallery(){
+  var p = getActiveProject();
+  var grid = $('galleryGrid');
+  if(!p || !p.history || p.history.length === 0){
+    grid.innerHTML = '<div class="pv-empty" style="grid-column:1/-1">还没有作品。生成几次后历史版本会自动出现在这里。</div>';
+    return;
+  }
+  var html = '';
+  for(var i = p.history.length - 1; i >= 0; i--){
+    var item = p.history[i];
+    var d = new Date(item.time);
+    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    html += '<div class="gallery-card" onclick="restoreFromGallery(' + i + ')">' +
+      '<div class="thumb" data-hidx="' + i + '"></div>' +
+      '<div class="info"><b>v' + item.version + '</b><span>' + esc((item.prompt || '').slice(0, 50)) + '<br>' + time + '</span></div>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+  // 渲染缩略图
+  setTimeout(function(){
+    var cards = grid.querySelectorAll('.thumb');
+    for(var k = 0; k < cards.length; k++){
+      var idx = parseInt(cards[k].getAttribute('data-hidx'), 10);
+      var item = p.history[idx];
+      if(!item) continue;
+      var comps = item.components || [];
+      var hp = '', cp = '', jp = '';
+      for(var j = 0; j < comps.length; j++){
+        var c = comps[j];
+        if(c.type === 'html') hp += c.code;
+        else if(c.type === 'css') cp += c.code;
+        else if(c.type === 'js') jp += c.code;
+      }
+      var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + cp + '</style></head><body>' + hp + '<script>' + jp + '<' + '/script></body></html>';
+      var iframe = document.createElement('iframe');
+      iframe.sandbox = 'allow-scripts';
+      iframe.srcdoc = doc;
+      cards[k].appendChild(iframe);
+    }
+  }, 50);
+}
+function restoreFromGallery(i){
+  var p = getActiveProject();
+  if(!p || !p.history[i]) return;
+  closeGallery();
+  restoreHistory(i);
+}
+
+/* ================= 风格条初始化 ================= */
+function initStyleBarSafely(){ try{ initStyleBar(); }catch(e){ console.error(e); } }
 /* ================= 换色板 ================= */
 var COLOR_PALETTES = [
   { name: '深空黑', primary: '#0a0a0f', secondary: '#1a1a24', accent: '#6d5cff', text: '#e8ecf4' },
@@ -1050,7 +1496,7 @@ function applyTemplate(){
   generate();
 }
 
-/* ================= 快捷键 ================= */
+/* ================= 快捷键面板 ================= */
 var SHORTCUTS = [
   { keys: ['Ctrl', 'Enter'], desc: '生成 / 修改' },
   { keys: ['Ctrl', 'F'], desc: '搜索代码' },
@@ -1197,6 +1643,7 @@ function importProjectJSON(){
         p.updatedAt = Date.now();
         if(!p.messages) p.messages = [];
         if(!p.history) p.history = [];
+        if(!p.gallery) p.gallery = [];
         state.projects.push(p);
         state.activeProjectId = p.id;
         saveProjects();
@@ -1245,7 +1692,7 @@ function generate(){
       model: $('model').value,
       temperature: (isModify && hasCode) ? 0.4 : 0.7,
       stream: useStream,
-      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.filter(function(m){ return m.role === 'user' || m.role === 'assistant'; }).map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
+      messages: [{ role: 'system', content: systemPrompt }].concat(state.messages.filter(function(m){ return m.role === 'user' || m.role === 'assistant'; }).slice(-10).map(function(m){ return { role: m.role, content: m.content }; }), [{ role: 'user', content: p }])
     };
     if(!useStream){
       fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
@@ -1825,7 +2272,6 @@ document.addEventListener('touchstart', function(e){
   if(prompt) prompt.addEventListener('keydown', function(e){
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); generate(); }
   });
-  // 流式/吐槽开关持久化
   try{
     var sm = localStorage.getItem('cu-stream-mode');
     if(sm !== null && $('streamMode')) $('streamMode').checked = sm === '1';
@@ -1845,7 +2291,10 @@ document.addEventListener('keydown', function(e){
   else if(ctrl && e.key === 'm'){ e.preventDefault(); mergeToSingleHtml(); }
   else if(ctrl && e.key === '/'){ e.preventDefault(); if(isMobile()) switchMobileTab(state.mobileTab === 'chat' ? 'code' : (state.mobileTab === 'code' ? 'preview' : 'chat')); }
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
-  else if(e.key === 'Escape'){ closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); $('colorPalette').classList.remove('show'); }
+  else if(e.key === 'Escape'){
+    closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery();
+    $('colorPalette').classList.remove('show');
+  }
 });
 
 window.addEventListener('load', function(){
@@ -1855,6 +2304,7 @@ window.addEventListener('load', function(){
   try { loadKeyProfiles(); } catch(e){ console.error('loadKeyProfiles:', e); }
   try { loadActiveProjectIntoState(); } catch(e){ console.error('loadActiveProjectIntoState:', e); }
   try { initEditor(); } catch(e){ console.error('initEditor:', e); }
+  try { initStyleBarSafely(); } catch(e){ console.error('initStyleBar:', e); }
   try{
     var savedModify = localStorage.getItem('cu-modify-mode') === '1';
     var cb = $('modifyMode');
