@@ -618,6 +618,8 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
           <label class="modify-toggle" style="font-size:11px"><input type="checkbox" id="roastMode"><span>吐槽</span></label>
           <button class="btn-sm" id="uploadBtn" onclick="document.getElementById('fileInput').click()" title="上传图片或文件" style="padding:6px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传</button>
           <input type="file" id="fileInput" accept="image/*,.txt,.md,.html,.css,.js,.json" multiple style="display:none" onchange="handleFileUpload(event)">
+          <!-- 取色器隐藏输入框 -->
+          <input type="color" id="colorPicker" style="display:none" onchange="applyPickedColor(this.value)">
           <button class="btn-cont" id="contBtn" onclick="continueGenerate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>继续</button>
           <button class="btn-go" id="genBtn" onclick="generate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>生成</button>
         </div>
@@ -768,7 +770,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <button class="panel-close" onclick="closeAllToolPanels()">✕</button>
   <div class="panel-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>插入</div>
   <div class="tools">
-    <button class="tool" onclick="insertSnippet('color');closeAllToolPanels();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>取色</button>
+    <button class="tool" onclick="pickColor();closeAllToolPanels();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>取色</button>
     <button class="tool" onclick="insertSnippet('image');closeAllToolPanels();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>占位图</button>
     <button class="tool" onclick="insertSnippet('lorem');closeAllToolPanels();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Lorem</button>
   </div>
