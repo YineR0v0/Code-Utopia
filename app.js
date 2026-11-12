@@ -710,9 +710,15 @@ function toggleToolGroup(group){
   var mask = $('toolPanelMask');
 
   if(willShow){
-        targetPanel.classList.add('show');
-    targetPanel.style.cssText = 'position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:99990!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;background:rgba(20,20,24,.98)!important;padding:16px!important;border-radius:20px 20px 0 0!important;max-height:60vh!important;overflow-y:auto!important;';
-    if(mask) mask.classList.add('show');
+         targetPanel.classList.add('show');
+    targetPanel.style.cssText =
+      'position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;' +
+      'z-index:99990!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;' +
+      'background:#141418!important;color:#e8ecf4!important;padding:16px!important;' +
+      'border-top:1px solid rgba(255,255,255,.12)!important;' +
+      'border-radius:20px 20px 0 0!important;' +
+      'box-shadow:0 -20px 60px -16px rgba(0,0,0,.9)!important;' +
+      'max-height:60vh!important;overflow-y:auto!important;min-height:100px!important;';
   } else {
     if(mask) mask.classList.remove('show');
   }
