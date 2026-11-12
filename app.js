@@ -2657,3 +2657,9 @@ function renderGuide(){
   msgs.appendChild(g);
 }
 function quickGen(p){ $('prompt').value = p; generate(); }
+document.addEventListener('click', function(e){
+  var mask = $('toolPanelMask');
+  if(mask && mask.contains(e.target)){
+    closeAllToolPanels();
+  }
+});
