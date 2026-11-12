@@ -33,8 +33,7 @@ var state = {
   _lastPreviewUpdate: 0,
   _streamingComp: false,
   mobileInspectorActive: false,
-  _lastSharedUrl: '',
-  _lastEmojiSummary: ''
+  _lastSharedUrl: ''
 };
 
 function $(id){ return document.getElementById(id); }
@@ -644,7 +643,6 @@ function initEditor(){
       setActiveCompCode(state.editor.getValue());
       debouncePreview();
     });
-    // Emmet 缩写支持
     if(monaco.languages.registerCompletionItemProvider){
       try{
         monaco.languages.registerCompletionItemProvider('html', {
@@ -686,7 +684,6 @@ function setEditorValue(val, lang){
 var previewTimer;
 function debouncePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 500); }
 
-/* Emmet 简易展开 */
 function expandEmmet(abbr){
   if(!abbr || abbr.length > 40) return '';
   try{
@@ -1203,7 +1200,7 @@ function setupDraftSave(){
   });
 }
 
-/* ================= 元素检查器（桌面 + 移动端） ================= */
+/* ================= 元素检查器（桌面） ================= */
 function toggleInspector(){
   if(isMobile()){ toggleMobileInspector(); return; }
   state.inspectorActive = !state.inspectorActive;
@@ -1265,22 +1262,8 @@ function inspectorClickHandler(e){
   var label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/)[0] : '');
 
   if(isMobile()){
-    var tag = $('inspMobileTag');
-    if(tag) tag.textContent = label;
-    var body = $('inspMobileBody');
-    if(body){
-      body.innerHTML =
-        '<div class="inspector-prop"><label>元素</label><code>' + esc(label) + '</code></div>' +
-        '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(html) + '</code></div>' +
-        '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
-        '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
-        '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
-        '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
-        '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
-        '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
-        '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
-    }
-    if(navigator.vibrate) navigator.vibrate(8);
+    // 移动端：不再显示底部条，弹小浮窗
+    showInspectorPopover(el, cs, html, label);
   } else {
     var body2 = $('inspectorBody');
     state.inspectorStyles = {
@@ -1325,33 +1308,130 @@ function applyInspectorChanges(){
   addMsg('assistant', '✅ 已应用修改到预览。', '要写回代码请告诉我"把刚才的样式写回代码"');
 }
 
-/* ================= 移动端元素检查器 ================= */
+/* ================= 移动端元素检查器（新交互） ================= */
 function toggleMobileInspector(){
   if(state.mobileInspectorActive){ exitMobileInspector(); return; }
   state.mobileInspectorActive = true;
-  var panel = $('inspectorMobile');
   var cross = $('inspectorCrosshair');
-  if(panel) panel.classList.add('show');
+  var hint = $('inspectorHint');
   if(cross) cross.classList.add('show');
-  $('inspMobileTag').textContent = '请点选元素';
-  $('inspMobileBody').innerHTML = '<div class="inspector-empty">👆 点一下页面里的元素，就能看到它的样式</div>';
+  if(hint) hint.classList.add('show');
+  document.body.classList.add('fullscreen-mode');
+  // 确保预览区铺满
+  if(isMobile()) switchMobileTab('preview');
   state.inspectorTarget = null;
   try{ setupInspector(); } catch(e){ console.error(e); }
-  addMsg('assistant', '🔍 元素检查已开启（手机模式）', '点击任意元素查看样式；点「完成」退出');
+  // 不弹任何面板，让用户先点选
 }
 function exitMobileInspector(){
   state.mobileInspectorActive = false;
-  var panel = $('inspectorMobile');
   var cross = $('inspectorCrosshair');
-  if(panel) panel.classList.remove('show');
+  var hint = $('inspectorHint');
+  var popover = $('inspectorPopover');
+  var mag = $('inspectorMagnify');
   if(cross) cross.classList.remove('show');
+  if(hint) hint.classList.remove('show');
+  if(popover) popover.classList.remove('show');
+  if(mag) mag.classList.remove('show');
+  document.body.classList.remove('fullscreen-mode');
   state.inspectorTarget = null;
   try{ teardownInspector(); } catch(e){}
 }
 function reselectInspector(){
-  $('inspMobileTag').textContent = '请点选元素';
-  $('inspMobileBody').innerHTML = '<div class="inspector-empty">👆 点一下页面里的元素，就能看到它的样式</div>';
+  var popover = $('inspectorPopover');
+  if(popover) popover.classList.remove('show');
+  var mag = $('inspectorMagnify');
+  if(mag) mag.classList.remove('show');
   state.inspectorTarget = null;
+}
+function closeInspectorPopover(){
+  var popover = $('inspectorPopover');
+  if(popover) popover.classList.remove('show');
+}
+function showInspectorPopover(el, cs, html, label){
+  state.inspectorTarget = el;
+  var popover = $('inspectorPopover');
+  var tag = $('inspPopTag');
+  if(tag) tag.textContent = label;
+  var body = $('inspPopBody');
+  if(body){
+    body.innerHTML =
+      '<div class="inspector-prop"><label>元素</label><code>' + esc(label) + '</code></div>' +
+      '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
+      '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
+      '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
+      '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
+      '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
+      '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
+      '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+  }
+  // 悬浮窗预览：渲染选中元素
+  var preview = $('inspPopPreview');
+  if(preview){
+    preview.innerHTML = '';
+    try{
+      var ph = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;padding:0;display:flex;align-items:center;justify-content:center;min-height:80px;font-family:system-ui,sans-serif;font-size:12px;background:#fff;overflow:hidden}*{max-width:100%!important;max-height:80px!important;overflow:hidden!important}</style></head><body>' + el.outerHTML + '</body></html>';
+      var pIframe = document.createElement('iframe');
+      pIframe.sandbox = 'allow-scripts';
+      pIframe.srcdoc = ph;
+      preview.appendChild(pIframe);
+    }catch(e){}
+  }
+  // 弹出浮窗，居中偏上
+  if(popover){
+    popover.classList.add('show');
+    popover.style.top = '';
+    popover.style.bottom = 'calc(20px + env(safe-area-inset-bottom))';
+    popover.style.left = '16px';
+    popover.style.right = '16px';
+  }
+  if(navigator.vibrate) navigator.vibrate(8);
+}
+function magnifyInspector(){
+  if(!state.inspectorTarget){ alert('请先点选元素'); return; }
+  var el = state.inspectorTarget;
+  var cs = (el.ownerDocument.defaultView || window).getComputedStyle(el);
+  var label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(/\s+/)[0] : '');
+  var tag = $('inspMagTag');
+  if(tag) tag.textContent = label;
+  var magPreview = $('inspMagPreview');
+  if(magPreview){
+    magPreview.innerHTML = '';
+    try{
+      var ph = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;padding:16px;display:flex;align-items:center;justify-content:center;min-height:200px;font-family:system-ui,sans-serif;background:#fff;overflow:auto}</style></head><body>' + el.outerHTML + '</body></html>';
+      var iframe = document.createElement('iframe');
+      iframe.sandbox = 'allow-scripts';
+      iframe.srcdoc = ph;
+      magPreview.appendChild(iframe);
+    }catch(e){}
+  }
+  var body = $('inspMagBody');
+  if(body){
+    body.innerHTML =
+      '<div class="inspector-prop"><label>元素</label><code>' + esc(label) + '</code></div>' +
+      '<div class="inspector-prop"><label>HTML 片段</label><code>' + esc(el.outerHTML.slice(0, 500)) + '</code></div>' +
+      '<div class="inspector-prop"><label>文字颜色</label><input type="text" id="insp_color" value="' + esc(rgbToHex(cs.color)) + '"></div>' +
+      '<div class="inspector-prop"><label>背景色</label><input type="text" id="insp_bg" value="' + esc(rgbToHex(cs.backgroundColor)) + '"></div>' +
+      '<div class="inspector-prop"><label>字号</label><input type="text" id="insp_fs" value="' + esc(cs.fontSize) + '"></div>' +
+      '<div class="inspector-prop"><label>字重</label><input type="text" id="insp_fw" value="' + esc(cs.fontWeight) + '"></div>' +
+      '<div class="inspector-prop"><label>内边距</label><input type="text" id="insp_pad" value="' + esc(cs.padding) + '"></div>' +
+      '<div class="inspector-prop"><label>外边距</label><input type="text" id="insp_mar" value="' + esc(cs.margin) + '"></div>' +
+      '<div class="inspector-prop"><label>圆角</label><input type="text" id="insp_br" value="' + esc(cs.borderRadius) + '"></div>';
+  }
+  var mag = $('inspectorMagnify');
+  if(mag) mag.classList.add('show');
+  var popover = $('inspectorPopover');
+  if(popover) popover.classList.remove('show');
+}
+function closeMagnify(){
+  var mag = $('inspectorMagnify');
+  if(mag) mag.classList.remove('show');
+  // 关闭放大后回到浮窗，如果还在检查模式
+  if(state.mobileInspectorActive && state.inspectorTarget){
+    var cs = (state.inspectorTarget.ownerDocument.defaultView || window).getComputedStyle(state.inspectorTarget);
+    var label = state.inspectorTarget.tagName.toLowerCase() + (state.inspectorTarget.id ? '#' + state.inspectorTarget.id : '');
+    showInspectorPopover(state.inspectorTarget, cs, state.inspectorTarget.outerHTML.slice(0, 500), label);
+  }
 }
 
 /* ================= 全屏 ================= */
@@ -1373,17 +1453,22 @@ function togglePreviewFullscreen(){
   var isFs = wrap.classList.toggle('preview-fullscreen');
   if(exitBtn) exitBtn.classList.toggle('show', isFs);
   if(isFs){
+    document.body.classList.add('fullscreen-mode');
     setTimeout(function(){
       try { applyViewport(); } catch(e){}
       if(state.editorReady) state.editor.layout();
     }, 100);
   } else {
+    document.body.classList.remove('fullscreen-mode');
     setTimeout(function(){ try { applyViewport(); } catch(e){} }, 100);
   }
 }
 document.addEventListener('fullscreenchange', function(){
   var btn = $('pvFullscreenExit');
-  if(!document.fullscreenElement && btn) btn.classList.remove('show');
+  if(!document.fullscreenElement){
+    if(btn) btn.classList.remove('show');
+    document.body.classList.remove('fullscreen-mode');
+  }
 });
 
 /* ================= 二维码分享 ================= */
@@ -1445,48 +1530,13 @@ function loadFromShareHash(){
   }catch(e){ return false; }
 }
 
-/* ================= Emoji 总结 ================= */
-function openEmojiSummary(){
-  var html = buildPreviewHtml();
-  var text = html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '');
-  var tags = text.match(/<(h1|h2|button|input|img|form|nav|section|table|a|video|canvas)[\s>]/gi) || [];
-  var emojis = [];
-  var seen = {};
-  tags.forEach(function(t){
-    t = t.toLowerCase();
-    var e = null;
-    if(/h1|h2/.test(t)) e = '📝';
-    else if(/button/.test(t)) e = '🔘';
-    else if(/input/.test(t)) e = '⌨️';
-    else if(/img/.test(t)) e = '🖼';
-    else if(/form/.test(t)) e = '📋';
-    else if(/nav/.test(t)) e = '🧭';
-    else if(/table/.test(t)) e = '📊';
-    else if(/a /.test(t)) e = '🔗';
-    else if(/video/.test(t)) e = '🎬';
-    else if(/canvas/.test(t)) e = '🎨';
-    else if(/section/.test(t)) e = '📄';
-    if(e && !seen[e]){ seen[e] = true; emojis.push(e); }
-  });
-  if(emojis.length === 0) emojis = ['📄'];
-  var summary = emojis.join(' ');
-  state._lastEmojiSummary = summary;
-  $('emojiContent').textContent = summary;
-  $('emojiModal').classList.add('show');
-}
-function closeEmojiSummary(){ $('emojiModal').classList.remove('show'); }
-function copyEmojiSummary(){
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(state._lastEmojiSummary).then(function(){ addMsg('assistant', '✅ Emoji 已复制。', state._lastEmojiSummary); });
-  }
-}
-
 /* ================= 常用 Prompt ================= */
 function showPromptDropdown(){
   var list = [];
   try{ list = JSON.parse(localStorage.getItem('cu-common-prompts') || '[]'); }catch(e){ list = []; }
   if(list.length === 0){
     list = ['生成一个深色风格的 SaaS 登录页', '生成一个产品落地页', '生成一个数据仪表盘', '生成一个待办清单应用'];
+    try{ localStorage.setItem('cu-common-prompts', JSON.stringify(list)); }catch(e){}
   }
   var wrap = $('promptDropdownList');
   wrap.innerHTML = '';
@@ -1497,9 +1547,9 @@ function showPromptDropdown(){
     btn.innerHTML = '<div class="txt" style="flex:1"><b>' + esc(list[i].slice(0, 40)) + '</b></div>';
     (function(txt){ btn.addEventListener('click', function(){ $('prompt').value = txt; closePromptDropdown(); $('prompt').focus(); }); })(list[i]);
     var del = document.createElement('span');
-    del.style.cssText = 'color:#5a6478;font-size:14px;padding:0 6px;cursor:pointer';
+    del.style.cssText = 'color:#5a6478;font-size:14px;padding:0 6px;cursor:pointer;flex-shrink:0';
     del.textContent = '✕';
-    (function(idx, lst){ del.addEventListener('click', function(e){ e.stopPropagation(); lst.splice(idx, 1); try{ localStorage.setItem('cu-common-prompts', JSON.stringify(lst)); }catch(er){}; showPromptDropdown(); }); })(i, list);
+    (function(idx, lst){ del.addEventListener('click', function(e){ e.stopPropagation(); lst.splice(idx, 1); try{ localStorage.setItem('cu-common-prompts', JSON.stringify(lst)); }catch(er){} showPromptDropdown(); }); })(i, list);
     btn.appendChild(del);
     wrap.appendChild(btn);
   }
@@ -2709,12 +2759,11 @@ document.addEventListener('keydown', function(e){
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
   else if(e.key === 'Escape'){
     closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery();
-    closeQRCode(); closePromptDropdown(); closeEmojiSummary(); hideReplaceBar();
+    closeQRCode(); closePromptDropdown(); hideReplaceBar();
     if(state.mobileInspectorActive) exitMobileInspector();
   }
 });
 
-/* Tab / Shift+Tab 缩进 */
 document.addEventListener('keydown', function(e){
   if(!state.editorReady) return;
   if(!state.editor.hasTextFocus || !state.editor.hasTextFocus()) return;
