@@ -743,9 +743,13 @@ function closeAllToolPanels(){
     }
   });
   var mask = $('toolPanelMask');
-  if(mask) mask.classList.remove('show');
+  if(mask){
+    mask.classList.remove('show');
+    mask.style.cssText = '';
+  }
   var btns = document.querySelectorAll('.tool-group-btn');
   for(var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+}
 }/* ================= 组件管理 ================= */
 function renderComponents(){
   var list = $('compList');
