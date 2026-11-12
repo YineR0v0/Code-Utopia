@@ -32,7 +32,9 @@ var state = {
   _lastEditorUpdate: 0,
   _lastPreviewUpdate: 0,
   _streamingComp: false,
-  mobileInspectorActive: false
+  mobileInspectorActive: false,
+  _lastSharedUrl: '',
+  _lastEmojiSummary: ''
 };
 
 function $(id){ return document.getElementById(id); }
@@ -642,6 +644,30 @@ function initEditor(){
       setActiveCompCode(state.editor.getValue());
       debouncePreview();
     });
+    // Emmet 缩写支持
+    if(monaco.languages.registerCompletionItemProvider){
+      try{
+        monaco.languages.registerCompletionItemProvider('html', {
+          triggerCharacters: ['>', '.', '#'],
+          provideCompletionItems: function(model, position){
+            var line = model.getValueInRange({ startLineNumber: position.lineNumber, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column });
+            var m = line.match(/([\w\-\.#>]+)$/);
+            if(!m) return { suggestions: [] };
+            var abbr = m[1];
+            var html = expandEmmet(abbr);
+            if(!html) return { suggestions: [] };
+            return {
+              suggestions: [{
+                label: abbr + ' → ' + html.slice(0, 30),
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: html,
+                range: new monaco.Range(position.lineNumber, position.column - abbr.length, position.lineNumber, position.column)
+              }]
+            };
+          }
+        });
+      }catch(e){}
+    }
     bindLongPress($('editor'));
     console.log('✅ Monaco 就绪');
   });
@@ -659,6 +685,40 @@ function setEditorValue(val, lang){
 }
 var previewTimer;
 function debouncePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 500); }
+
+/* Emmet 简易展开 */
+function expandEmmet(abbr){
+  if(!abbr || abbr.length > 40) return '';
+  try{
+    var tagMatch = abbr.match(/^([a-z][a-z0-9]*)?/i);
+    var tag = (tagMatch && tagMatch[1]) || 'div';
+    var idMatch = abbr.match(/#([\w\-]+)/);
+    var classMatches = abbr.match(/\.([\w\-]+)/g) || [];
+    var classes = classMatches.map(function(s){ return s.slice(1); });
+    var attrs = '';
+    if(idMatch) attrs += ' id="' + idMatch[1] + '"';
+    if(classes.length) attrs += ' class="' + classes.join(' ') + '"';
+    if(/\[.*\]/.test(abbr)){
+      var attrMatch = abbr.match(/\[([^\]]+)\]/);
+      if(attrMatch) attrs += ' ' + attrMatch[1];
+    }
+    var text = '';
+    if(/\{.*\}/.test(abbr)){
+      var textMatch = abbr.match(/\{([^}]+)\}/);
+      if(textMatch) text = textMatch[1];
+    }
+    var count = 1;
+    var multMatch = abbr.match(/\*(\d+)/);
+    if(multMatch) count = parseInt(multMatch[1], 10);
+    var voidTags = { img:1, input:1, br:1, hr:1, meta:1, link:1 };
+    var out = [];
+    for(var i = 0; i < count; i++){
+      if(voidTags[tag]) out.push('<' + tag + attrs + ' />');
+      else out.push('<' + tag + attrs + '>' + text + '</' + tag + '>');
+    }
+    return out.join('\n');
+  }catch(e){ return ''; }
+}
 
 /* ================= 组件管理（含拖拽排序） ================= */
 function renderComponents(){
@@ -982,8 +1042,7 @@ function takeScreenshot(){
   if(typeof html2canvas === 'undefined'){ alert('截图库未加载，请检查网络'); return; }
   try{
     var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    var iframeBody = iframeDoc.body;
-    html2canvas(iframeBody, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas){
+    html2canvas(iframeDoc.body, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas){
       canvas.toBlob(function(blob){
         if(!blob) return;
         var url = URL.createObjectURL(blob);
@@ -999,34 +1058,149 @@ function takeScreenshot(){
     alert('截图失败：' + e.message + '\n可能是页面跨域或 iframe 还未加载完');
   }
 }
-function copyScreenshotToClipboard(){
-  var iframe = $('preview');
-  if(!iframe) return;
-  if(typeof html2canvas === 'undefined'){ alert('截图库未加载'); return; }
+
+/* ================= 明暗切换 ================= */
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light-theme');
+  try{ localStorage.setItem('cu-theme', isLight ? 'light' : 'dark'); }catch(e){}
+  var icon = $('themeIcon');
+  if(icon){
+    icon.innerHTML = isLight
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+  if(state.editorReady && typeof monaco !== 'undefined'){
+    try{ monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark'); }catch(e){}
+  }
+}
+function loadTheme(){
   try{
-    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    html2canvas(iframeDoc.body, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas){
-      canvas.toBlob(function(blob){
-        if(!blob) return;
-        if(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem){
-          var item = new ClipboardItem({ 'image/png': blob });
-          navigator.clipboard.write([item]).then(function(){
-            addMsg('assistant', '✅ 图片已复制到剪贴板。', '可以直接粘贴到微信/文档');
-          }).catch(function(){
-            var url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
-            addMsg('assistant', '复制到剪贴板失败，已在新窗口打开图片。', '右键保存即可');
-          });
-        } else {
-          var url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-          setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
-          addMsg('assistant', '浏览器不支持直接复制图片，已在新窗口打开。', '右键保存即可');
-        }
-      }, 'image/png');
+    if(localStorage.getItem('cu-theme') === 'light'){
+      document.body.classList.add('light-theme');
+      var icon = $('themeIcon');
+      if(icon) icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    }
+  }catch(e){}
+}
+
+/* ================= 下载单 HTML ================= */
+function downloadSingleHtml(){
+  var html = buildPreviewHtml();
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ((getActiveProject() || {}).name || 'page') + '.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  addMsg('assistant', '✅ 单 HTML 文件已下载。', '双击就能在浏览器打开');
+}
+
+/* ================= 新窗口预览 ================= */
+function openPreviewInNewWindow(){
+  var html = buildPreviewHtml();
+  var w = window.open('', '_blank');
+  if(!w){ alert('浏览器拦截了新窗口，请允许弹窗'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+/* ================= 查找替换 ================= */
+function showReplaceBar(){
+  var bar = $('replaceBar');
+  if(!bar) return;
+  bar.classList.toggle('show');
+  if(bar.classList.contains('show')) setTimeout(function(){ $('replaceFind').focus(); }, 50);
+}
+function hideReplaceBar(){ var bar = $('replaceBar'); if(bar) bar.classList.remove('show'); }
+function replaceKeydown(e){
+  if(e.key === 'Enter'){ e.preventDefault(); doReplace(); }
+  else if(e.key === 'Escape'){ hideReplaceBar(); }
+}
+function getCurrentComponentCodeForReplace(){
+  var cur = state.components[state.activeComp];
+  if(cur && state.editorReady) cur.code = getEditorValue();
+  return cur ? (cur.code || '') : '';
+}
+function setCurrentComponentCodeForReplace(newCode){
+  var cur = state.components[state.activeComp];
+  if(cur) cur.code = newCode;
+  setEditorValue(newCode, compLang(cur));
+  refreshPreview();
+}
+function doReplace(){
+  var find = $('replaceFind').value;
+  var withStr = $('replaceWith').value;
+  if(!find) return;
+  var code = getCurrentComponentCodeForReplace();
+  var idx = code.indexOf(find);
+  if(idx < 0){ $('replaceCount').textContent = '未找到'; return; }
+  var newCode = code.slice(0, idx) + withStr + code.slice(idx + find.length);
+  setCurrentComponentCodeForReplace(newCode);
+  $('replaceCount').textContent = '替换 1 处';
+}
+function doReplaceAll(){
+  var find = $('replaceFind').value;
+  var withStr = $('replaceWith').value;
+  if(!find) return;
+  var code = getCurrentComponentCodeForReplace();
+  var re = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+  var matches = code.match(re);
+  if(!matches){ $('replaceCount').textContent = '未找到'; return; }
+  var newCode = code.replace(re, withStr);
+  setCurrentComponentCodeForReplace(newCode);
+  $('replaceCount').textContent = '替换 ' + matches.length + ' 处';
+}
+
+/* ================= 插入片段 ================= */
+function insertSnippet(kind){
+  if(!state.editorReady) return;
+  if(kind === 'image'){
+    var w = prompt('图片宽度（px）', '400');
+    var h = prompt('图片高度（px）', '300');
+    if(!w || !h) return;
+    var pos = state.editor.getPosition();
+    state.editor.executeEdits('', [{ range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), text: '<img src="https://picsum.photos/' + w + '/' + h + '" alt="placeholder" />' }]);
+    state.editor.focus();
+    return;
+  }
+  if(kind === 'lorem'){
+    var pos2 = state.editor.getPosition();
+    state.editor.executeEdits('', [{ range: new monaco.Range(pos2.lineNumber, pos2.column, pos2.lineNumber, pos2.column), text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }]);
+    state.editor.focus();
+    return;
+  }
+  if(kind === 'color'){
+    var input = document.createElement('input');
+    input.type = 'color';
+    input.value = '#6d5cff';
+    input.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(input);
+    input.addEventListener('change', function(){
+      var pos = state.editor.getPosition();
+      state.editor.executeEdits('', [{ range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), text: input.value }]);
+      state.editor.focus();
+      document.body.removeChild(input);
     });
-  }catch(e){ alert('复制失败：' + e.message); }
+    input.click();
+  }
+}
+
+/* ================= 保存草稿 ================= */
+var draftTimer;
+function setupDraftSave(){
+  var prompt = $('prompt');
+  if(!prompt) return;
+  try{
+    var saved = localStorage.getItem('cu-draft-prompt');
+    if(saved) prompt.value = saved;
+  }catch(e){}
+  prompt.addEventListener('input', function(){
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(function(){
+      try{ localStorage.setItem('cu-draft-prompt', prompt.value); }catch(e){}
+    }, 500);
+  });
 }
 
 /* ================= 元素检查器（桌面 + 移动端） ================= */
@@ -1180,71 +1354,6 @@ function reselectInspector(){
   state.inspectorTarget = null;
 }
 
-/* ================= 一句话改风格 ================= */
-var STYLE_PRESETS = [
-  { key: 'cyberpunk', label: '赛博朋克', prompt: '赛博朋克风格：霓虹粉紫、蓝紫渐变、像素字体、故障效果、扫描线背景' },
-  { key: 'minimal', label: '日式极简', prompt: '日式极简风格：大面积留白、米白背景、细黑线条、无衬线字体、克制用色' },
-  { key: '90s', label: '90 年代', prompt: '90 年代网页风格：卡通按钮、闪烁文字、tiled 背景、Comic Sans 字体、彩虹色标题、访客计数器' },
-  { key: 'glass', label: '玻璃拟态', prompt: '玻璃拟态风格：毛玻璃面板、半透明背景、柔和阴影、圆角、渐变光晕' },
-  { key: 'brutalism', label: '粗暴主义', prompt: '粗暴主义风格：粗黑边框、大号纯色块、碰撞字体、无圆角、高对比黑白' },
-  { key: 'dark', label: '暗黑模式', prompt: '暗黑模式：深黑背景、低饱和文字、靛蓝强调、柔和阴影、夜间友好' },
-  { key: 'light', label: '清爽浅色', prompt: '清爽浅色风格：纯白背景、浅灰分区、蓝色强调、大圆角、柔和投影' },
-  { key: 'retro', label: '复古报纸', prompt: '复古报纸风格：米黄背景、衬线字体、黑白配色、分栏布局、复古标题' }
-];
-function initStyleBar(){
-  var bar = $('styleBar');
-  if(!bar) return;
-  bar.innerHTML = '<span style="font-size:11px;color:#5a6478;padding:6px 4px;white-space:nowrap;flex-shrink:0">一句话改风格：</span>';
-  for(var i = 0; i < STYLE_PRESETS.length; i++){
-    var p = STYLE_PRESETS[i];
-    var chip = document.createElement('button');
-    chip.className = 'style-chip';
-    chip.textContent = p.label;
-    (function(pr){ chip.addEventListener('click', function(){ applyStylePreset(pr); }); })(p);
-    bar.appendChild(chip);
-  }
-}
-function applyStylePreset(preset){
-  if(!getActiveProject() && state.components.length === 0){ alert('还没有内容，先生成一个页面'); return; }
-  if(!$('apiKey').value.trim() || !state.connected || !$('model').value){
-    alert('一句话改风格需要真实 API。请先在配置里填 Key、测试连接拉取模型。');
-    return;
-  }
-  var current = buildPreviewHtml();
-  addMsg('user', '改风格：' + preset.label, '');
-  state.loading = true;
-  $('genBtn').disabled = true;
-  $('overlay').classList.add('show');
-  $('overlayText').textContent = '正在改风格为 ' + preset.label + '…';
-  startTimer();
-  if(isMobile()) switchMobileTab('preview');
-
-  var body = {
-    model: $('model').value, temperature: 0.6, stream: false,
-    messages: [
-      { role: 'system', content: '你是前端设计师。用户给你一份现有页面代码，你要把它改成指定的设计风格，保留所有功能和内容，只改视觉。返回完整 HTML，不要 markdown。' },
-      { role: 'user', content: '请把下面的页面改成【' + preset.prompt + '】风格，保留所有功能和文字内容：\n\n' + current }
-    ]
-  };
-  fetch($('baseUrl').value.trim().replace(/\/$/, '') + '/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + $('apiKey').value.trim() },
-    body: JSON.stringify(body)
-  }).then(function(r){ if(!r.ok) throw new Error('API ' + r.status); return r.json(); })
-  .then(function(data){
-    var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-    txt = txt.replace(/^```html\s*/i, '').replace(/```\s*$/i, '');
-    if(data.usage && data.usage.total_tokens) recordUsage(data.usage.total_tokens, $('model').value);
-    applyGenerated(txt, '改风格：' + preset.label, false);
-  })
-  .catch(function(e){ addMsg('assistant', '改风格失败：' + e.message, ''); })
-  .then(function(){
-    stopTimer();
-    state.loading = false; $('genBtn').disabled = false; $('overlay').classList.remove('show');
-  });
-}
-function initStyleBarSafely(){ try{ initStyleBar(); }catch(e){ console.error(e); } }
-
 /* ================= 全屏 ================= */
 function toggleAppFullscreen(){
   var doc = document.documentElement;
@@ -1276,6 +1385,127 @@ document.addEventListener('fullscreenchange', function(){
   var btn = $('pvFullscreenExit');
   if(!document.fullscreenElement && btn) btn.classList.remove('show');
 });
+
+/* ================= 二维码分享 ================= */
+function showQRCode(){
+  var html = buildPreviewHtml();
+  var url = '';
+  try{
+    var compressed = encodeURIComponent(html);
+    if(compressed.length < 30000){
+      url = location.origin + location.pathname + '#share=' + compressed;
+    } else {
+      url = location.origin + location.pathname;
+    }
+  }catch(e){ url = location.href; }
+  state._lastSharedUrl = url;
+  var qrWrap = $('qrImageWrap');
+  if(qrWrap){
+    qrWrap.innerHTML = '';
+    if(typeof QRCode !== 'undefined'){
+      new QRCode(qrWrap, { text: url, width: 220, height: 220, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.L });
+    } else {
+      qrWrap.innerHTML = '<p style="color:#5a6478;font-size:11px">二维码库未加载</p>';
+    }
+  }
+  $('qrLinkText').value = url;
+  $('qrModal').classList.add('show');
+}
+function closeQRCode(){ $('qrModal').classList.remove('show'); }
+function copyShareLink(){
+  var txt = $('qrLinkText');
+  if(!txt) return;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt.value).then(function(){ addMsg('assistant', '✅ 分享链接已复制。', ''); }).catch(function(){ txt.select(); document.execCommand('copy'); });
+  } else { txt.select(); document.execCommand('copy'); }
+}
+function shareWithWebAPI(){
+  if(navigator.share){
+    navigator.share({ title: 'Code Utopia 页面', text: '看看我用 AI 生成的页面', url: state._lastSharedUrl }).catch(function(){});
+  } else {
+    copyShareLink();
+  }
+}
+function loadFromShareHash(){
+  try{
+    var hash = location.hash;
+    if(!hash || hash.indexOf('#share=') !== 0) return false;
+    var encoded = hash.slice(7);
+    var html = decodeURIComponent(encoded);
+    if(!html || html.length < 50) return false;
+    var comps = smartSplit(html);
+    state.components = comps;
+    state.activeComp = 0;
+    setEditorValue(getActiveCompCode(), compLang(comps[0]));
+    renderComponents();
+    refreshPreview();
+    snapshot('从分享链接加载');
+    history.replaceState(null, '', location.pathname);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ================= Emoji 总结 ================= */
+function openEmojiSummary(){
+  var html = buildPreviewHtml();
+  var text = html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '');
+  var tags = text.match(/<(h1|h2|button|input|img|form|nav|section|table|a|video|canvas)[\s>]/gi) || [];
+  var emojis = [];
+  var seen = {};
+  tags.forEach(function(t){
+    t = t.toLowerCase();
+    var e = null;
+    if(/h1|h2/.test(t)) e = '📝';
+    else if(/button/.test(t)) e = '🔘';
+    else if(/input/.test(t)) e = '⌨️';
+    else if(/img/.test(t)) e = '🖼';
+    else if(/form/.test(t)) e = '📋';
+    else if(/nav/.test(t)) e = '🧭';
+    else if(/table/.test(t)) e = '📊';
+    else if(/a /.test(t)) e = '🔗';
+    else if(/video/.test(t)) e = '🎬';
+    else if(/canvas/.test(t)) e = '🎨';
+    else if(/section/.test(t)) e = '📄';
+    if(e && !seen[e]){ seen[e] = true; emojis.push(e); }
+  });
+  if(emojis.length === 0) emojis = ['📄'];
+  var summary = emojis.join(' ');
+  state._lastEmojiSummary = summary;
+  $('emojiContent').textContent = summary;
+  $('emojiModal').classList.add('show');
+}
+function closeEmojiSummary(){ $('emojiModal').classList.remove('show'); }
+function copyEmojiSummary(){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(state._lastEmojiSummary).then(function(){ addMsg('assistant', '✅ Emoji 已复制。', state._lastEmojiSummary); });
+  }
+}
+
+/* ================= 常用 Prompt ================= */
+function showPromptDropdown(){
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem('cu-common-prompts') || '[]'); }catch(e){ list = []; }
+  if(list.length === 0){
+    list = ['生成一个深色风格的 SaaS 登录页', '生成一个产品落地页', '生成一个数据仪表盘', '生成一个待办清单应用'];
+  }
+  var wrap = $('promptDropdownList');
+  wrap.innerHTML = '';
+  for(var i = 0; i < list.length; i++){
+    var btn = document.createElement('button');
+    btn.className = 'qcard';
+    btn.style.cssText = 'width:100%;text-align:left;margin-bottom:8px;display:flex;align-items:center;gap:8px';
+    btn.innerHTML = '<div class="txt" style="flex:1"><b>' + esc(list[i].slice(0, 40)) + '</b></div>';
+    (function(txt){ btn.addEventListener('click', function(){ $('prompt').value = txt; closePromptDropdown(); $('prompt').focus(); }); })(list[i]);
+    var del = document.createElement('span');
+    del.style.cssText = 'color:#5a6478;font-size:14px;padding:0 6px;cursor:pointer';
+    del.textContent = '✕';
+    (function(idx, lst){ del.addEventListener('click', function(e){ e.stopPropagation(); lst.splice(idx, 1); try{ localStorage.setItem('cu-common-prompts', JSON.stringify(lst)); }catch(er){}; showPromptDropdown(); }); })(i, list);
+    btn.appendChild(del);
+    wrap.appendChild(btn);
+  }
+  $('promptDropdownModal').classList.add('show');
+}
+function closePromptDropdown(){ $('promptDropdownModal').classList.remove('show'); }
 
 /* ================= Prompt 模板 ================= */
 var DEFAULT_TEMPLATES = [
@@ -1424,6 +1654,7 @@ function applyTemplate(){
 var SHORTCUTS = [
   { keys: ['Ctrl', 'Enter'], desc: '生成 / 修改' },
   { keys: ['Ctrl', 'F'], desc: '搜索代码' },
+  { keys: ['Ctrl', 'H'], desc: '查找替换' },
   { keys: ['Ctrl', 'S'], desc: '存快照' },
   { keys: ['Ctrl', 'K'], desc: '切换工程' },
   { keys: ['Ctrl', '/'], desc: '切换 Tab' },
@@ -1791,9 +2022,7 @@ function generate(){
   var textFiles = files.filter(function(f){ return f.kind === 'text'; });
   var imageFiles = files.filter(function(f){ return f.kind === 'image'; });
   if(textFiles.length > 0){
-    for(var i = 0; i < textFiles.length; i++){
-      textContent += '\n\n=== 附件：' + textFiles[i].name + ' ===\n' + textFiles[i].content + '\n=== 结束 ===';
-    }
+    for(var i = 0; i < textFiles.length; i++) textContent += '\n\n=== 附件：' + textFiles[i].name + ' ===\n' + textFiles[i].content + '\n=== 结束 ===';
   }
   var userContent;
   if(imageFiles.length > 0 && isVisionModel){
@@ -2447,12 +2676,8 @@ document.addEventListener('touchstart', function(e){
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); generate(); }
   });
   if(prompt){
-    prompt.addEventListener('focus', function(){
-      setTimeout(function(){ document.body.classList.add('keyboard-open'); }, 100);
-    });
-    prompt.addEventListener('blur', function(){
-      setTimeout(function(){ document.body.classList.remove('keyboard-open'); }, 100);
-    });
+    prompt.addEventListener('focus', function(){ setTimeout(function(){ document.body.classList.add('keyboard-open'); }, 100); });
+    prompt.addEventListener('blur', function(){ setTimeout(function(){ document.body.classList.remove('keyboard-open'); }, 100); });
   }
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize', function(){
@@ -2476,6 +2701,7 @@ document.addEventListener('keydown', function(e){
   if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.key !== '?'){ if(e.key === 'Escape') e.target.blur(); return; }
   var ctrl = e.ctrlKey || e.metaKey;
   if(ctrl && e.key === 'f'){ e.preventDefault(); toggleSearch(); }
+  else if(ctrl && e.key === 'h'){ e.preventDefault(); showReplaceBar(); }
   else if(ctrl && e.key === 's'){ e.preventDefault(); manualSnapshot(); }
   else if(ctrl && e.key === 'k'){ e.preventDefault(); openProjects(); }
   else if(ctrl && e.key === 'm'){ e.preventDefault(); mergeToSingleHtml(); }
@@ -2483,7 +2709,26 @@ document.addEventListener('keydown', function(e){
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
   else if(e.key === 'Escape'){
     closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery();
+    closeQRCode(); closePromptDropdown(); closeEmojiSummary(); hideReplaceBar();
     if(state.mobileInspectorActive) exitMobileInspector();
+  }
+});
+
+/* Tab / Shift+Tab 缩进 */
+document.addEventListener('keydown', function(e){
+  if(!state.editorReady) return;
+  if(!state.editor.hasTextFocus || !state.editor.hasTextFocus()) return;
+  if(e.key === 'Tab' && !e.shiftKey){
+    e.preventDefault();
+    var sel = state.editor.getSelection();
+    if(sel && sel.startLineNumber !== sel.endLineNumber){
+      state.editor.trigger('keyboard', 'editor.action.indentLines', null);
+    } else {
+      state.editor.trigger('keyboard', 'type', { text: '  ' });
+    }
+  } else if(e.key === 'Tab' && e.shiftKey){
+    e.preventDefault();
+    state.editor.trigger('keyboard', 'editor.action.outdentLines', null);
   }
 });
 
@@ -2495,12 +2740,18 @@ window.addEventListener('load', function(){
   try { loadActiveProjectIntoState(); } catch(e){ console.error('loadActiveProjectIntoState:', e); }
   try { initEditor(); } catch(e){ console.error('initEditor:', e); }
   try { initStyleBarSafely(); } catch(e){ console.error('initStyleBar:', e); }
+  try { loadTheme(); } catch(e){ console.error('loadTheme:', e); }
+  try { setupDraftSave(); } catch(e){ console.error('setupDraftSave:', e); }
   try{
     var savedModify = localStorage.getItem('cu-modify-mode') === '1';
     var cb = $('modifyMode');
     if(cb){ cb.checked = savedModify; onModifyToggle(savedModify); }
   }catch(e){}
-  try { if(state.messages.length === 0) renderGuide(); else renderMessages(); } catch(e){ console.error(e); }
+  try {
+    var loadedShare = loadFromShareHash();
+    if(!loadedShare && state.messages.length === 0) renderGuide();
+    else if(!loadedShare) renderMessages();
+  } catch(e){ console.error(e); }
   try { refreshPreview(); } catch(e){ console.error('refreshPreview:', e); }
   try { applyViewport(); } catch(e){ console.error('applyViewport:', e); }
   try { if(isMobile()) switchMobileTab('chat'); } catch(e){}
