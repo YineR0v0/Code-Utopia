@@ -588,6 +588,22 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 }
 .tool-panel .panel-title svg{ width:14px; height:14px; color:#a78bfa; }
 .tool-panel .tools{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; width:100%; }
+@media (max-width: 900px), (pointer: coarse){
+  .tool-panel{
+    max-height:75vh !important;
+    padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+  .tool-panel .tool{
+    flex:1 1 calc(50% - 8px);
+    justify-content:center;
+    min-height:44px;
+    font-size:13px;
+  }
+  .tool-panel .panel-title{
+    font-size:13px;
+    padding-bottom:12px;
+  }
+}
 </style>
 </head>
 <body>
