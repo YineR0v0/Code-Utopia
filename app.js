@@ -277,286 +277,330 @@ function saveProjects(){
 }
 function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
 function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
-function closeProjects(){ $('projectsView').classList.remove('show'); }/* ================= 全局错误提示 ================= */
-window.addEventListener('error', function(e){
-  var bar = document.getElementById('errbar');
-  var txt = document.getElementById('errtext');
-  if(bar && txt){ bar.style.display='block'; txt.textContent = (e.message||'') + ' @ line ' + (e.lineno||''); }
-});
-
-var state = {
-  messages: [], loading: false, abort: null, started: false, connected: false,
-  components: [], activeComp: 0, history: [], historyIndex: -1,
-  editor: null, editorReady: false, isProgrammaticChange: false,
-  keyProfiles: [], activeProfile: -1, projects: [], activeProjectId: null,
-  allModels: [], currentModel: '', modifyMode: false,
-  startTime: 0, timerInterval: null, lastDuration: 0,
-  lastRawOutput: '', mobileTab: 'chat',
-  searchResults: [], searchIndex: 0,
-  pendingTemplate: null, pasteTarget: null, longPressTimer: null,
-  editingTemplateIdx: -1, renamingProjectId: null,
-  diffMode: false, diffSelections: [],
-  inspectorActive: false, inspectorTarget: null, inspectorStyles: {},
-  dragSrcIdx: -1, dragOverIdx: -1,
-  attachedFiles: [], favorites: [], galleryTab: 'history',
-  _lastEditorUpdate: 0, _lastPreviewUpdate: 0, _streamingComp: false,
-  mobileInspectorActive: false, _lastSharedUrl: '',
-  _undoStack: [], _redoStack: [],
-  zoomMode: false, zoomScale: 1, zoomPanX: 0, zoomPanY: 0,
-  compMenuTarget: -1, compRenameTarget: -1,
-  toastTimer: null
-};
-
-function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-function isMobile(){ return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches; }
-
-/* ================= Toast ================= */
-function toast(msg, ms){
-  var t = $('toast');
-  if(!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(state.toastTimer);
-  state.toastTimer = setTimeout(function(){ t.classList.remove('show'); }, ms || 1800);
-}
-
-/* ================= 移动端 Tab ================= */
-function switchMobileTab(tab){
-  state.mobileTab = tab;
-  var tabs = document.querySelectorAll('.mtab');
-  for(var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
-  var panels = { chat: 'panelChat', code: 'panelCode', preview: 'panelPreview' };
-  for(var key in panels){
-    var p = $(panels[key]);
-    if(p) p.classList.toggle('mobile-active', key === tab);
-  }
-  setTimeout(function(){
-    if(tab === 'preview'){ applyViewport(); }
-    if(tab === 'code' && state.editorReady){ state.editor.layout(); }
-  }, 60);
-  if(tab === 'chat'){ var b = $('chatBadge'); if(b) b.classList.remove('show'); }
-}
-
-/* ================= 计时器 ================= */
-function startTimer(){
-  state.startTime = Date.now();
-  var timer = $('timer'), num = $('timerNum');
-  if(!timer || !num) return;
-  timer.style.display = 'block';
-  num.textContent = '0.0';
-  clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(function(){
-    num.textContent = ((Date.now() - state.startTime) / 1000).toFixed(1);
-  }, 100);
-}
-function stopTimer(){
-  clearInterval(state.timerInterval);
-  state.timerInterval = null;
-  if(state.startTime) state.lastDuration = (Date.now() - state.startTime) / 1000;
-  var timer = $('timer'); if(timer) timer.style.display = 'none';
-  return state.lastDuration;
-}
-
-/* ================= 完整性检测 ================= */
-function isCodeIncomplete(code){
-  if(!code || !code.trim()) return false;
-  var trimmed = code.trim();
-  if(/<html[\s>]/i.test(trimmed)) return !/<\/html>\s*$/i.test(trimmed);
-  if(/<body[\s>]/i.test(trimmed)) return !/<\/body>/i.test(trimmed);
-  if(/<\/[a-z]+>\s*$|<script[\s\S]*<\/script>\s*$/i.test(trimmed)) return false;
-  if(/[}\;\)]\s*$/.test(trimmed)) return false;
-  return true;
-}
-function showContinueBtn(show){
-  var btn = $('contBtn');
-  if(btn) btn.classList.toggle('show', !!show);
-}
-
-/* ================= 语言识别 ================= */
-function detectLanguage(code){
-  if(!code || !code.trim()) return 'html';
-  var s = code.trim();
-  if(/<!DOCTYPE|<html[\s>]|<head[\s>]|<body[\s>]/i.test(s)) return 'html';
-  if(/^\s*@(media|import|keyframes|font-face|supports|charset)/i.test(s)) return 'css';
-  if(/^\s*[\.\#\w\-\[\]\:\*]+\s*\{[^}]*[\w\-]+\s*:/m.test(s) && !/<[a-z]/i.test(s)) return 'css';
-  if(/^\s*:root\s*\{/i.test(s)) return 'css';
-  if(/^\s*(import\s|export\s|const\s|let\s|var\s|function\s|class\s|async\s|await\s|document\.|window\.|console\.|\$\(|=>|\/\/|\/\*)/m.test(s)) return 'js';
-  if(/\b(function|const|let|var|return|if|for|while)\s*[\(\{\w]/i.test(s) && !/<[a-z]/i.test(s)) return 'js';
-  if(/^\s*<[a-z][\s\S]*>[\s\S]*<\/[a-z]+>\s*$/i.test(s)) return 'html';
-  if(/^\s*<[a-z][^>]*\/?>/i.test(s)) return 'html';
-  return 'html';
-}
-
-/* ================= 智能分区 ================= */
-function smartSplit(raw){
-  if(!raw || !raw.trim()) return [];
-  var text = raw.trim();
-  text = text.replace(/^```(?:html|css|js|javascript)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-  var markedParts = parseMarkedSections(text);
-  if(markedParts.length > 0) return markedParts;
-  var firstMark = text.search(/<!DOCTYPE|<html|<head|<body|<style|<script|@media|@keyframes|[\.\#\w\-\[\]]+\s*\{|\/\/|\/\*/i);
-  if(firstMark > 0) text = text.slice(firstMark);
-  var comps = [];
-  var styleBlocks = [], scriptBlocks = [];
-  var m;
-  var styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi;
-  while((m = styleRe.exec(text))) styleBlocks.push(m[1].trim());
-  var scriptRe = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
-  while((m = scriptRe.exec(text))) scriptBlocks.push(m[1].trim());
-  var headExtras = '';
-  var headMatch = text.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-  if(headMatch){
-    var h = headMatch[1];
-    h = h.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-    h = h.replace(/<title[^>]*>[\s\S]*?<\/title>/gi, '');
-    h = h.replace(/<meta[^>]*>/gi, '');
-    h = h.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi, '');
-    headExtras = h.trim();
-  }
-  var bodyContent = '';
-  var bodyMatch = text.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  if(bodyMatch){
-    var b = bodyMatch[1];
-    b = b.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-    b = b.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi, '');
-    bodyContent = b.trim();
-  }
-  var hasHtmlDoc = /<!DOCTYPE|<html[\s>]/i.test(text);
-  if(hasHtmlDoc){
-    if(headExtras) comps.push({ name: 'Head 资源', type: 'html', code: headExtras, enabled: true });
-    if(bodyContent){
-      var bodyParts = splitBodyIntoSections(bodyContent);
-      if(bodyParts.length > 1){ for(var i = 0; i < bodyParts.length; i++) comps.push({ name: bodyParts[i].name, type: 'html', code: bodyParts[i].code, enabled: true }); }
-      else comps.push({ name: '页面结构', type: 'html', code: bodyContent, enabled: true });
+function closeProjects(){ $('projectsView').classList.remove('show'); }function getProjectPreviewText(p){
+  if(!p.components || p.components.length === 0) return '空工程';
+  for(var i = 0; i < p.components.length; i++){
+    var c = p.components[i];
+    if(c.type === 'html' && c.code && c.code.trim()){
+      var txt = c.code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if(txt) return txt.slice(0, 80);
     }
-    for(var s = 0; s < styleBlocks.length; s++) comps.push({ name: styleBlocks.length > 1 ? ('样式 ' + (s+1)) : '样式', type: 'css', code: styleBlocks[s], enabled: true });
-    for(var sc = 0; sc < scriptBlocks.length; sc++) comps.push({ name: scriptBlocks.length > 1 ? ('交互 ' + (sc+1)) : '交互', type: 'js', code: scriptBlocks[sc], enabled: true });
-  } else {
-    var lang = detectLanguage(text);
-    if(lang === 'html'){
-      var parts = splitBodyIntoSections(text);
-      if(parts.length > 1){ for(var p = 0; p < parts.length; p++) comps.push({ name: parts[p].name, type: 'html', code: parts[p].code, enabled: true }); }
-      else comps.push({ name: '页面结构', type: 'html', code: text, enabled: true });
-    } else if(lang === 'css') comps.push({ name: '样式', type: 'css', code: text, enabled: true });
-    else if(lang === 'js') comps.push({ name: '交互', type: 'js', code: text, enabled: true });
-    else comps.push({ name: '页面', type: 'html', code: text, enabled: true });
   }
-  if(comps.length === 0) comps.push({ name: '页面', type: detectLanguage(text), code: text, enabled: true });
-  return comps;
+  return p.components.length + ' 个组件';
 }
-function parseMarkedSections(text){
-  var comps = [];
-  var fileMarkers = [];
-  var m;
-  var fileRe = /<!--\s*(?:FILE|文件)[\s:：]+([^\s>]+)\s*-->/gi;
-  while((m = fileRe.exec(text))) fileMarkers.push({ name: m[1], pos: m.index, end: m.index + m[0].length });
-  if(fileMarkers.length > 0){
-    for(var i = 0; i < fileMarkers.length; i++){
-      var start = fileMarkers[i].end;
-      var end = i + 1 < fileMarkers.length ? fileMarkers[i+1].pos : text.length;
-      var content = text.slice(start, end).trim();
-      var fname = fileMarkers[i].name;
-      var type = 'html';
-      if(/\.css$/i.test(fname)) type = 'css';
-      else if(/\.js$/i.test(fname)) type = 'js';
-      comps.push({ name: fname.replace(/\.(html|css|js)$/i, ''), type: type, code: content, enabled: true });
-    }
-    return comps;
+function renderProjects(){
+  var q = ($('projSearch').value || '').toLowerCase();
+  var grid = $('projGrid');
+  var list = state.projects.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0; });
+  list.sort(function(a, b){ return b.updatedAt - a.updatedAt; });
+  var projIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+  var html = '';
+  for(var i = 0; i < list.length; i++){
+    var p = list[i];
+    var active = p.id === state.activeProjectId ? ' active' : '';
+    var d = new Date(p.updatedAt);
+    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    var preview = getProjectPreviewText(p);
+    var msgCount = (p.messages || []).length;
+    var favCount = (p.favorites || []).length;
+    html += '<div class="proj-card' + active + '" onclick="switchProject(\'' + p.id + '\')">' +
+      '<div class="proj-actions"><button class="del" onclick="event.stopPropagation();openRenameProject(\'' + p.id + '\')" title="重命名">✎</button><button class="del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="删除">✕</button></div>' +
+      '<div class="pemoji">' + projIconSvg + '</div>' +
+      '<h3>' + esc(p.name) + '</h3>' +
+      '<div class="proj-preview">' + esc(preview) + '</div>' +
+      '<div class="meta">' + (p.components || []).length + ' 组件 · ' + (p.history || []).length + ' 版本 · ' + favCount + ' 收藏 · ' + msgCount + ' 对话<br>' + time + '</div>' +
+      '</div>';
   }
-  return [];
-}
-function splitBodyIntoSections(html){
-  if(!html || !html.trim()) return [];
-  var re = /<(section|main|header|footer|nav|aside|article)[^>]*>[\s\S]*?<\/\1>/gi;
-  var matches = html.match(re) || [];
-  if(matches.length >= 2){
-    var parts = [];
-    var lastPos = 0, idx = 0, match;
-    while((match = re.exec(html))){
-      if(match.index > lastPos){
-        var before = html.slice(lastPos, match.index).trim();
-        if(before) parts.push({ name: '片段 ' + (++idx), code: before });
-      }
-      var tagMatch = match[0].match(/^<(\w+)([^>]*)>/i);
-      var tagName = tagMatch ? tagMatch[1].toLowerCase() : 'section';
-      var attrs = tagMatch ? tagMatch[2] : '';
-      var idMatch = attrs.match(/id=["']([^"']+)["']/i);
-      var classMatch = attrs.match(/class=["']([^"']+)["']/i);
-      var name = idMatch ? idMatch[1] : (classMatch ? classMatch[1].split(/\s+/)[0] : tagName);
-      parts.push({ name: name, code: match[0] });
-      lastPos = match.index + match[0].length;
-    }
-    var tail = html.slice(lastPos).trim();
-    if(tail) parts.push({ name: '片段 ' + (++idx), code: tail });
-    if(parts.length >= 2) return parts;
-  }
-  return [{ name: '页面结构', code: html }];
+  html += '<div class="new-proj" onclick="createProject()"><div class="plus">＋</div><span>新建工程</span></div>';
+  if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
+  grid.innerHTML = html;
 }
 
-/* ================= 修改模式 ================= */
-function onModifyToggle(checked){
-  state.modifyMode = checked;
-  var btn = $('genBtn'), lbl = $('modifyToggle');
-  if(checked){
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>修改';
-    btn.classList.add('modify');
-    if(lbl) lbl.classList.add('active');
-  } else {
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>生成';
-    btn.classList.remove('modify');
-    if(lbl) lbl.classList.remove('active');
-  }
-  try{ localStorage.setItem('cu-modify-mode', checked ? '1' : '0'); }catch(e){}
+/* ================= 工程操作 ================= */
+function createProject(){
+  var name = prompt('新工程名称：', '新工程'); if(name === null) return;
+  name = name.trim() || '新工程';
+  var p = newProjectData(name);
+  state.projects.push(p);
+  state.activeProjectId = p.id;
+  saveProjects();
+  loadActiveProjectIntoState();
+  renderProjects();
+  closeProjects();
 }
-function buildModifyContext(){ return { html: buildPreviewHtml() }; }
-function buildModifySystemPrompt(ctx){
-  return [
-    '你是前端代码修改助手。用户会给你一份【现有完整代码】和一条【修改需求】。',
-    '你必须基于现有代码进行修改，保留原有的结构、样式和功能，只改动用户要求的部分。',
-    '不要从头重写，不要删除无关功能，不要改变整体设计风格（除非用户明确要求）。',
-    '',
-    '【输出要求】',
-    '只返回一个完整的、可以直接运行的 HTML 文件（内嵌所有 style 和 script）。',
-    '不要 markdown 代码块，不要解释文字，直接以 <!DOCTYPE html> 开头。',
-    '修改后必须保证 CSS、HTML、JS 三者完全对应一致，不能有任何错位。',
-    '页面要美观、现代、响应式。',
-    '',
-    '【现有代码】',
-    ctx.html,
-    '【代码结束】'
-  ].join('\n');
+function switchProject(id){
+  if(id === state.activeProjectId){ closeProjects(); return; }
+  saveCurrentProject();
+  state.activeProjectId = id;
+  saveProjects();
+  loadActiveProjectIntoState();
+  closeProjects();
+  addMsg('assistant', '已切换到工程：' + (getActiveProject() || {}).name, '');
 }
-
-/* ================= 工程管理 ================= */
-function loadProjects(){
-  try{ var raw = localStorage.getItem('cu-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
-  var activeRaw = localStorage.getItem('cu-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
-  if(state.projects.length === 0){ var p = newProjectData('我的第一个工程'); state.projects.push(p); state.activeProjectId = p.id; }
-  if(!state.activeProjectId || !state.projects.some(function(x){ return x.id === state.activeProjectId; })) state.activeProjectId = state.projects[0].id;
-  for(var i = 0; i < state.projects.length; i++){
-    if(!state.projects[i].messages) state.projects[i].messages = [];
-    if(!state.projects[i].history) state.projects[i].history = [];
-    if(!state.projects[i].favorites) state.projects[i].favorites = [];
-    if(!state.projects[i].gallery) state.projects[i].gallery = [];
+function deleteProject(id){
+  var p = null;
+  for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === id){ p = state.projects[i]; break; } }
+  if(!p) return;
+  if(!confirm('确定删除工程「' + p.name + '」？')) return;
+  state.projects = state.projects.filter(function(x){ return x.id !== id; });
+  if(state.activeProjectId === id){
+    if(state.projects.length > 0) state.activeProjectId = state.projects[0].id;
+    else { var np = newProjectData('我的第一个工程'); state.projects.push(np); state.activeProjectId = np.id; }
+    loadActiveProjectIntoState();
   }
   saveProjects();
+  renderProjects();
 }
-function newProjectData(name){
-  return {
-    id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    name: name || '未命名工程', createdAt: Date.now(), updatedAt: Date.now(),
-    components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
-    history: [], historyIndex: -1, messages: [], favorites: [], gallery: []
-  };
+function openRenameProject(id){
+  state.renamingProjectId = id;
+  var p = null;
+  for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === id){ p = state.projects[i]; break; } }
+  if(!p) return;
+  $('renameProjectInput').value = p.name;
+  $('renameProjectModal').classList.add('show');
+  setTimeout(function(){ $('renameProjectInput').focus(); $('renameProjectInput').select(); }, 50);
 }
-function saveProjects(){
-  try{ localStorage.setItem('cu-projects', JSON.stringify(state.projects)); }catch(e){}
-  try{ localStorage.setItem('cu-active-project', state.activeProjectId); }catch(e){}
+function closeRenameProject(){ $('renameProjectModal').classList.remove('show'); state.renamingProjectId = null; }
+function doRenameProject(){
+  if(!state.renamingProjectId) return;
+  var newName = $('renameProjectInput').value.trim();
+  if(!newName){ alert('名称不能为空'); return; }
+  for(var i = 0; i < state.projects.length; i++){
+    if(state.projects[i].id === state.renamingProjectId){ state.projects[i].name = newName; state.projects[i].updatedAt = Date.now(); break; }
+  }
+  saveProjects(); renderProjects(); closeRenameProject();
 }
-function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
-function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
-function closeProjects(){ $('projectsView').classList.remove('show'); }/* ================= Monaco ================= */
+
+function saveCurrentProject(){
+  var p = getActiveProject(); if(!p) return;
+  var cur = state.components[state.activeComp];
+  if(cur && state.editorReady) cur.code = getEditorValue();
+  p.components = state.components;
+  p.history = state.history;
+  p.historyIndex = state.historyIndex;
+  p.messages = state.messages;
+  p.updatedAt = Date.now();
+  saveProjects();
+}
+function loadActiveProjectIntoState(){
+  var p = getActiveProject(); if(!p) return;
+  state.components = p.components || [];
+  if(state.components.length === 0) state.components = [{ name: '页面结构', type: 'html', code: '', enabled: true }];
+  state.activeComp = 0;
+  state.history = p.history || [];
+  state.historyIndex = typeof p.historyIndex === 'number' ? p.historyIndex : state.history.length - 1;
+  state.messages = p.messages || [];
+  state._undoStack = []; state._redoStack = [];
+  renderMessages();
+  setEditorValue(getActiveCompCode(), compLang(state.components[0]));
+  renderComponents();
+  renderHistory();
+  refreshPreview();
+}
+function renderMessages(){
+  var msgs = $('msgs'); msgs.innerHTML = '';
+  if(state.messages.length === 0){ renderGuide(); return; }
+  for(var i = 0; i < state.messages.length; i++){
+    var m = state.messages[i];
+    var div = document.createElement('div');
+    div.className = 'msg ' + (m.role || 'assistant');
+    var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    var iconAI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+    div.innerHTML = '<div class="av">' + (m.role==='user' ? iconUser : iconAI) + '</div><div class="bubble"></div>';
+    var b = div.querySelector('.bubble');
+    b.textContent = m.display || m.content || '';
+    if(m.sub){ var s = document.createElement('span'); s.className='sub'; s.textContent = m.sub; b.appendChild(s); }
+    msgs.appendChild(div);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+/* ================= 组合预览 ================= */
+function compLang(c){ if(!c) return 'html'; return c.type === 'css' ? 'css' : (c.type === 'js' ? 'javascript' : 'html'); }
+function buildPreviewHtml(){
+  var htmlParts = '', cssParts = '', jsParts = '';
+  for(var i = 0; i < state.components.length; i++){
+    var c = state.components[i]; if(!c.enabled) continue;
+    if(c.type === 'html') htmlParts += '\n' + c.code + '\n';
+    else if(c.type === 'css') cssParts += '\n' + c.code + '\n';
+    else if(c.type === 'js') jsParts += '\n' + c.code + '\n';
+  }
+  var hasDoc = /<html[\s>]/i.test(htmlParts);
+  if(hasDoc){
+    var out = htmlParts;
+    if(cssParts) out = out.replace(/<\/head>/i, '<style>\n' + cssParts + '\n</style>\n</head>');
+    if(jsParts && out.indexOf('</body>') >= 0) out = out.replace(/<\/body>/i, '<script>\n' + jsParts + '\n<' + '/script>\n</body>');
+    return out;
+  }
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>\n' + cssParts + '\n</style></head><body>\n' + htmlParts + '\n<script>\n' + jsParts + '\n<' + '/script>\n</body></html>';
+}
+function refreshPreview(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  if(state.zoomMode){
+    var html = buildPreviewHtml();
+    iframe.srcdoc = html;
+    setTimeout(applyZoomTransform, 80);
+  } else {
+    iframe.srcdoc = buildPreviewHtml();
+  }
+}
+
+function setConn(type, text){
+  var el = $('conn');
+  el.className = 'conn ' + type;
+  el.querySelector('.txt').textContent = text;
+}
+function updateMode(){
+  var live = $('apiKey').value.trim().length > 0 && state.connected;
+  var tag = $('modeTag');
+  tag.textContent = live ? '真实 API' : '演示模式';
+  tag.className = 'tag' + (live ? ' live' : '');
+}
+function addMsg(role, text, sub){
+  state.messages.push({ role: role, content: text, display: text, sub: sub || '' });
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var iconAI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+  div.innerHTML = '<div class="av">' + (role==='user' ? iconUser : iconAI) + '</div><div class="bubble"></div>';
+  var b = div.querySelector('.bubble');
+  b.textContent = text;
+  if(sub){ var s = document.createElement('span'); s.className='sub'; s.textContent = sub; b.appendChild(s); }
+  $('msgs').appendChild(div);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+  if(isMobile() && state.mobileTab !== 'chat' && role === 'assistant'){
+    var badge = $('chatBadge');
+    if(badge) badge.classList.add('show');
+  }
+  var p = getActiveProject();
+  if(p){ p.messages = state.messages; saveProjects(); }
+}
+
+/* ================= 密钥管理 ================= */
+function loadKeyProfiles(){
+  try{ var raw = localStorage.getItem('cu-keys'); if(raw) state.keyProfiles = JSON.parse(raw) || []; }catch(e){ state.keyProfiles = []; }
+  if(state.keyProfiles.length === 0){
+    try{
+      var old = JSON.parse(localStorage.getItem('cu-cfg') || '{}');
+      if(old.apiKey) state.keyProfiles.push({ name: '默认配置', baseUrl: old.baseUrl || 'https://api.deepseek.com/v1', apiKey: old.apiKey, model: old.model || '' });
+    }catch(e){}
+  }
+  renderKeySelect();
+  if(state.keyProfiles.length > 0) switchKeyProfile('0');
+}
+function saveKeyProfiles(){ try{ localStorage.setItem('cu-keys', JSON.stringify(state.keyProfiles)); }catch(e){} }
+function renderKeySelect(){
+  var sel = $('keySelect');
+  var html = '<option value="">— 选择配置 —</option>';
+  for(var i = 0; i < state.keyProfiles.length; i++) html += '<option value="' + i + '">' + esc(state.keyProfiles[i].name || ('配置 ' + (i+1))) + '</option>';
+  sel.innerHTML = html;
+  if(state.activeProfile >= 0) sel.value = String(state.activeProfile);
+}
+function switchKeyProfile(idx){
+  if(idx === '' || idx === null){ state.activeProfile = -1; return; }
+  var i = parseInt(idx, 10);
+  if(isNaN(i) || !state.keyProfiles[i]) return;
+  state.activeProfile = i;
+  var p = state.keyProfiles[i];
+  $('profileName').value = p.name || '';
+  $('baseUrl').value = p.baseUrl || '';
+  $('apiKey').value = p.apiKey || '';
+  state.connected = false;
+  state.allModels = [];
+  $('model').innerHTML = '<option value="">先测试连接</option>';
+  $('model').disabled = true;
+  state.currentModel = p.model || '';
+  if(p.model && p.model.length){
+    state.allModels = [p.model];
+    $('model').innerHTML = '<option value="' + esc(p.model) + '">' + esc(p.model) + '</option>';
+    $('model').value = p.model;
+    $('model').disabled = false;
+  }
+  setConn('', '已切换配置');
+  updateMode();
+  renderKeySelect();
+  try{ renderAttachments(); }catch(e){}
+}
+function newKeyProfile(){
+  state.keyProfiles.push({ name: '新配置', baseUrl: 'https://api.deepseek.com/v1', apiKey: '', model: '' });
+  state.activeProfile = state.keyProfiles.length - 1;
+  saveKeyProfiles();
+  switchKeyProfile(state.activeProfile);
+  $('profileName').focus();
+}
+function saveKeyProfile(ev){
+  if(state.activeProfile < 0){ state.keyProfiles.push({}); state.activeProfile = state.keyProfiles.length - 1; }
+  var p = state.keyProfiles[state.activeProfile];
+  p.name = $('profileName').value.trim() || ('配置 ' + (state.activeProfile + 1));
+  p.baseUrl = $('baseUrl').value.trim();
+  p.apiKey = $('apiKey').value.trim();
+  p.model = $('model').value || state.currentModel || p.model || '';
+  saveKeyProfiles();
+  renderKeySelect();
+  var btn = (ev && ev.target) || (window.event && window.event.target);
+  if(btn){ var old = btn.innerHTML; btn.innerHTML = '✓ 已保存'; setTimeout(function(){ btn.innerHTML = old; }, 1200); }
+  setConn('ok', '配置已保存（含模型）');
+  updateMode();
+  toast('✅ 配置已保存');
+}
+function deleteKeyProfile(){
+  if(state.activeProfile < 0) return;
+  if(!confirm('确定删除「' + (state.keyProfiles[state.activeProfile].name || '该配置') + '」？')) return;
+  state.keyProfiles.splice(state.activeProfile, 1);
+  state.activeProfile = state.keyProfiles.length > 0 ? 0 : -1;
+  saveKeyProfiles();
+  if(state.activeProfile >= 0) switchKeyProfile(state.activeProfile);
+  else {
+    renderKeySelect();
+    $('profileName').value = ''; $('baseUrl').value = 'https://api.deepseek.com/v1'; $('apiKey').value = '';
+    $('model').innerHTML = '<option value="">先测试连接</option>'; $('model').disabled = true;
+    setConn('', '未连接');
+  }
+}
+
+/* ================= 模型搜索 ================= */
+function populateModels(list){
+  state.allModels = list.slice();
+  var sel = $('model');
+  var html = '';
+  for(var i = 0; i < list.length; i++) html += '<option value="' + esc(list[i]) + '">' + esc(list[i]) + '</option>';
+  sel.innerHTML = html || '<option value="">无可用模型</option>';
+  sel.disabled = list.length === 0;
+  $('modelCount').textContent = '(' + list.length + ' 个)';
+  $('modelFilter').style.display = list.length > 6 ? 'block' : 'none';
+  $('modelFilter').value = '';
+  $('modelFilterClear').style.display = 'none';
+  var currentSel = state.currentModel || '';
+  var savedModel = state.keyProfiles[state.activeProfile] ? (state.keyProfiles[state.activeProfile].model || '') : '';
+  var finalModel = '';
+  if(currentSel && list.indexOf(currentSel) >= 0) finalModel = currentSel;
+  else if(savedModel && list.indexOf(savedModel) >= 0) finalModel = savedModel;
+  else {
+    var prefer = list.find(function(m){ return /gpt-4o|deepseek-chat|qwen-plus|claude-3/i.test(m); });
+    finalModel = prefer || list[0] || '';
+  }
+  if(finalModel) sel.value = finalModel;
+  state.currentModel = sel.value;
+  if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile] && state.currentModel){
+    state.keyProfiles[state.activeProfile].model = state.currentModel;
+    saveKeyProfiles();
+  }
+}
+function filterModels(){
+  var q = $('modelFilter').value.trim().toLowerCase();
+  $('modelFilterClear').style.display = q ? 'block' : 'none';
+  var list = state.allModels.filter(function(m){ return !q || m.toLowerCase().indexOf(q) >= 0; });
+  var sel = $('model');
+  var cur = sel.value;
+  var html = '';
+  for(var i = 0; i < list.length; i++) html += '<option value="' + esc(list[i]) + '">' + esc(list[i]) + '</option>';
+  sel.innerHTML = html || '<option value="">无匹配模型</option>';
+  if(list.indexOf(cur) >= 0) sel.value = cur;
+  else if(list.length > 0) sel.value = list[0];
+  $('modelCount').textContent = '(' + list.length + '/' + state.allModels.length + ')';
+}
+function clearModelFilter(){ $('modelFilter').value = ''; filterModels(); }/* ================= Monaco ================= */
 function initEditor(){
   if(typeof require === 'undefined'){
     $('fallbackTa').style.display = 'block';
