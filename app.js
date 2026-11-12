@@ -698,16 +698,20 @@ function toggleToolGroup(group){
 
   var willShow = !targetPanel.classList.contains('show');
 
-  // 先全部隐藏
+   // 先全部隐藏
   Object.keys(TOOL_GROUP_MAP).forEach(function(k){
     var p = $(TOOL_GROUP_MAP[k]);
-    if(p) p.classList.remove('show');
+    if(p){
+      p.classList.remove('show');
+      p.style.cssText = '';
+    }
   });
 
   var mask = $('toolPanelMask');
 
   if(willShow){
-    targetPanel.classList.add('show');
+        targetPanel.classList.add('show');
+    targetPanel.style.cssText = 'position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:99990!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;background:rgba(20,20,24,.98)!important;padding:16px!important;border-radius:20px 20px 0 0!important;max-height:60vh!important;overflow-y:auto!important;';
     if(mask) mask.classList.add('show');
   } else {
     if(mask) mask.classList.remove('show');
@@ -723,7 +727,10 @@ function toggleToolGroup(group){
 function closeAllToolPanels(){
   Object.keys(TOOL_GROUP_MAP).forEach(function(k){
     var p = $(TOOL_GROUP_MAP[k]);
-    if(p) p.classList.remove('show');
+    if(p){
+      p.classList.remove('show');
+      p.style.cssText = '';
+    }
   });
   var mask = $('toolPanelMask');
   if(mask) mask.classList.remove('show');
