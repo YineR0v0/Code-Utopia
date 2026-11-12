@@ -724,15 +724,29 @@ function redoCode(){
 }
 
 /* ================= 工具栏分组 ================= */
+var TOOL_GROUP_MAP = {
+  file: 'toolPanelFile',
+  edit: 'toolPanelEdit',
+  insert: 'toolPanelInsert',
+  share: 'toolPanelShare',
+  prompt: 'toolPanelPrompt'
+};
 function toggleToolGroup(group){
-  var panels = ['file','edit','insert','share','prompt'];
-  for(var i = 0; i < panels.length; i++){
-    var el = $('toolPanel' + panels[i].charAt(0).toUpperCase() + panels[i].slice(1));
-    if(el) el.classList.toggle('show', panels[i] === group ? !el.classList.contains('show') : false);
-  }
+  var panelId = TOOL_GROUP_MAP[group];
+  var targetPanel = panelId ? $(panelId) : null;
+  if(!targetPanel){ console.warn('未找到面板:', group, panelId); return; }
+  var willShow = !targetPanel.classList.contains('show');
+  // 先全部隐藏
+  Object.keys(TOOL_GROUP_MAP).forEach(function(k){
+    var p = $(TOOL_GROUP_MAP[k]);
+    if(p) p.classList.remove('show');
+  });
+  // 需要显示就显示
+  if(willShow) targetPanel.classList.add('show');
+  // 更新按钮高亮
   var btns = document.querySelectorAll('.tool-group-btn');
   for(var i = 0; i < btns.length; i++){
-    btns[i].classList.toggle('active', btns[i].getAttribute('data-group') === group && $('toolPanel' + group.charAt(0).toUpperCase() + group.slice(1)).classList.contains('show'));
+    btns[i].classList.toggle('active', btns[i].getAttribute('data-group') === group && willShow);
   }
 }
 
@@ -2537,7 +2551,11 @@ function bindLongPress(el){
 }
 (function(){ var targets = [$('prompt'), $('msgs'), $('fallbackTa')]; for(var i = 0; i < targets.length; i++) if(targets[i]) bindLongPress(targets[i]); })();
 document.addEventListener('click', function(e){ var menu = $('copyMenu'); if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu(); var compMenu = $('compMenu'); if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu(); });
-document.addEventListener('touchstart', function(e){ var menu = $('copyMenu'); if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu(); var compMenu = $('compMenu'); if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu(); }, { passive: true });
+document.addEventListener('touchstart', function(e){ var menu = $('copyMenu'); if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu(); var compMenu = $('compMenu'); if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu(); }, { passive: true });var toolPanel = document.querySelector('.tool-panel.show');
+if(toolPanel && !toolPanel.contains(e.target) && !e.target.closest('.tool-group-btn')){
+  document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('show'); });
+  document.querySelectorAll('.tool-group-btn').forEach(function(b){ b.classList.remove('active'); });
+}
 
 /* 长按预览区 800ms 开启移动检查器 */
 (function(){
