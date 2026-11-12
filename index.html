@@ -510,6 +510,84 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .qcard .txt span{font-size:10px}
   .kbd-grid{grid-template-columns:1fr}
 }
+  /* ================= 工具抽屉 ================= */
+.tool-panel-mask{
+  position:fixed;
+  inset:0;
+  z-index:99989;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(2px);
+  display:none;
+  animation:fade .2s;
+}
+.tool-panel-mask.show{ display:block; }
+@keyframes fade{ from{opacity:0} to{opacity:1} }
+
+.tool-panel{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:99990;
+  background:rgba(20,20,24,.98);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border-top:1px solid rgba(255,255,255,.12);
+  border-radius:20px 20px 0 0;
+  padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+  display:none;
+  flex-wrap:wrap;
+  gap:8px;
+  box-shadow:0 -20px 60px -16px rgba(0,0,0,.9);
+  max-height:60vh;
+  overflow-y:auto;
+}
+.tool-panel.show{ display:flex; }
+.tool-panel::before{
+  content:'';
+  position:absolute;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  width:40px;
+  height:4px;
+  border-radius:2px;
+  background:rgba(255,255,255,.15);
+}
+.tool-panel .panel-close{
+  position:absolute;
+  top:10px;
+  right:14px;
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(30,30,36,.6);
+  color:#8b94a8;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-family:inherit;
+  z-index:2;
+}
+.tool-panel .panel-close:hover{ color:#fff; border-color:rgba(255,255,255,.25); }
+.tool-panel .panel-title{
+  width:100%;
+  font-size:12px;
+  font-weight:600;
+  color:#dbe4f5;
+  padding:8px 0 10px;
+  margin-top:6px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  margin-bottom:4px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.tool-panel .panel-title svg{ width:14px; height:14px; color:#a78bfa; }
+.tool-panel .tools{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; width:100%; }
 </style>
 </head>
 <body>
