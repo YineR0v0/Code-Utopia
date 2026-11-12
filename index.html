@@ -595,12 +595,14 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 
   <main class="panel mid" id="panelCode">
     <div class="head">
-      <div class="title"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>代码 / 组件</div>
-      <div style="display:flex;gap:4px">
-        <button class="btn-icon" onclick="toggleSearch()" title="搜索 (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
-        <button class="tool" onclick="toggleHistory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史</button>
-      </div>
-    </div>
+  <div class="title"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>代码 / 组件</div>
+  <div style="display:flex;gap:4px;align-items:center">
+    <button class="tool" onclick="undoCode()" title="撤销 (Ctrl+Z)" style="padding:6px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>撤销</button>
+    <button class="tool" onclick="redoCode()" title="重做 (Ctrl+Y)" style="padding:6px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>重做</button>
+    <button class="btn-icon" onclick="toggleSearch()" title="搜索 (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
+    <button class="tool" onclick="toggleHistory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史</button>
+  </div>
+</div>
     <div class="search-bar" id="searchBar">
       <input type="text" id="searchInput" placeholder="在所有组件中搜索…" oninput="doSearch(this.value)" onkeydown="searchKeydown(event)">
       <span class="count" id="searchCount">0/0</span>
