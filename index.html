@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -90,7 +90,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .composer{padding:12px 14px 14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(20,20,24,.35)}
 .box{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(8,8,10,.7);backdrop-filter:blur(14px);overflow:hidden;transition:all .18s}
 .box:focus-within{border-color:rgba(150,150,160,.4);box-shadow:0 0 0 3px rgba(150,150,160,.1)}
-.box textarea{width:100%;height:80px;padding:13px 14px;background:transparent;color:#e8ecf4;border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6;-webkit-user-select:text;user-select:text}
+.box textarea{width:100%;min-height:80px;max-height:240px;padding:13px 14px;background:transparent;color:#e8ecf4;border:none;resize:none;font-family:inherit;font-size:14px;line-height:1.6;-webkit-user-select:text;user-select:text;overflow-y:auto}
 .box textarea:focus{outline:none}
 .box textarea::placeholder{color:#3f4759}
 .attach-bar{display:flex;gap:6px;padding:8px 10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2)}
@@ -114,14 +114,26 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .btn-cont.show{display:inline-flex}
 .btn-cont:active{transform:scale(.97)}
 .btn-cont svg{width:15px;height:15px}
+/* 工具栏分组 */
 .code{flex:1;display:flex;flex-direction:column;padding:10px 12px;gap:8px;min-height:0;position:relative}
-.tools{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;flex-shrink:0;min-width:0;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
-.tools::-webkit-scrollbar{display:none}
+.tool-groups{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;flex-shrink:0;min-width:0;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.tool-groups::-webkit-scrollbar{display:none}
+.tool-group-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0}
+.tool-group-btn:hover,.tool-group-btn.active{border-color:rgba(150,150,160,.4);color:#e8ecf4;background:rgba(60,60,68,.6)}
+.tool-group-btn svg{width:14px;height:14px;flex-shrink:0}
+.tool-panel{position:absolute;top:calc(100%);left:0;right:0;z-index:55;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;display:none;flex-wrap:wrap;gap:6px;box-shadow:0 20px 60px -16px rgba(0,0,0,.9);margin-top:4px;max-height:50vh;overflow-y:auto}
+.tool-panel.show{display:flex}
+.tool-panel-label{width:100%;font-size:10.5px;color:#5a6478;font-weight:600;letter-spacing:.5px;padding:4px 2px}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tool{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0}
 .tool:active{transform:scale(.95)}
 .tool.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.08)}
 .tool.danger:hover{border-color:rgba(239,68,68,.5);color:#fca5a5}
 .tool svg{width:13px;height:13px;flex-shrink:0}
+.replace-bar{position:absolute;top:100%;left:0;right:0;z-index:54;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.1);padding:10px 14px;display:none;gap:8px;align-items:center;flex-wrap:wrap;border-radius:0 0 10px 10px}
+.replace-bar.show{display:flex}
+.replace-bar input{flex:1;min-width:100px;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;-webkit-user-select:text;user-select:text}
+.replace-bar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .comp-layout{flex:1;display:flex;gap:8px;min-height:0;overflow:hidden}
 .comp-side{width:170px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;backdrop-filter:blur(14px)}
 .comp-side-head{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;color:#8b94a8;font-weight:600;display:flex;justify-content:space-between;align-items:center}
@@ -137,6 +149,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .comp-item .cdot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px rgba(34,197,94,.6)}
 .comp-item.disabled .cdot{background:#5a6478;box-shadow:none}
 .comp-item .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-item .cline{font-size:9px;color:#5a6478;font-family:monospace;flex-shrink:0;margin-left:4px}
 .comp-item .ctype{font-size:9.5px;color:#5a6478;font-family:monospace;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.04)}
 .comp-item .ctype.css{color:#7dd3fc;background:rgba(125,211,252,.1)}
 .comp-item .ctype.js{color:#fcd34d;background:rgba(252,211,77,.1)}
@@ -154,10 +167,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 #editor{position:absolute;inset:0}
 .ta{flex:1;padding:15px;background:rgba(8,8,10,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.06);border-radius:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.7;resize:none;white-space:pre;overflow:auto;tab-size:2;width:100%;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
 .ta:focus{outline:none;border-color:rgba(150,150,160,.4)}
-.replace-bar{position:absolute;top:100%;left:0;right:0;z-index:55;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.1);padding:10px 14px;display:none;gap:8px;align-items:center;flex-wrap:wrap;border-radius:0 0 10px 10px}
-.replace-bar.show{display:flex}
-.replace-bar input{flex:1;min-width:100px;background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;-webkit-user-select:text;user-select:text}
-.replace-bar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .pv-tools{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex-wrap:wrap;background:rgba(20,20,24,.3)}
 .vp{display:flex;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:2px;gap:2px;backdrop-filter:blur(10px)}
 .vpb{width:36px;height:32px;border-radius:7px;border:none;background:transparent;color:#5a6478;cursor:pointer;display:grid;place-items:center;font-family:inherit;transition:all .15s}
@@ -307,12 +316,13 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .model-search input{padding-right:32px}
 .model-search .clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#5a6478;font-size:16px;line-height:1;padding:4px;min-height:24px;display:flex;align-items:center}
 .model-search .clear:active{color:#c9d1e3}
-.copy-menu{position:fixed;z-index:99999;display:none;flex-direction:column;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 20px 50px -12px rgba(0,0,0,.8);padding:6px;min-width:160px}
+.copy-menu{position:fixed;z-index:99999;display:none;flex-direction:column;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 20px 50px -12px rgba(0,0,0,.8);padding:6px;min-width:180px}
 .copy-menu.show{display:flex}
 .copy-menu button{padding:11px 14px;border-radius:8px;border:none;background:transparent;color:#e8ecf4;font-size:13px;font-family:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:40px}
 .copy-menu button:hover,.copy-menu button:active{background:rgba(150,150,160,.15)}
-.copy-menu button svg{width:15px;height:15px;color:#b0b8c8}
-.copy-menu .hint{margin-left:auto;font-size:10px;color:#5a6478}
+.copy-menu button.danger:hover{color:#fca5a5;background:rgba(239,68,68,.15)}
+.copy-menu button svg{width:15px;height:15px;color:#b0b8c8;flex-shrink:0}
+.copy-menu .divider{height:1px;background:rgba(255,255,255,.08);margin:4px 0}
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99998;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-mask.show{display:flex}
 .modal{background:rgba(20,20,24,.98);border:1px solid rgba(255,255,255,.12);border-radius:16px;max-width:440px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(0,0,0,.9)}
@@ -329,7 +339,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .search-bar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .search-bar .count{font-size:12px;color:#5a6478;font-family:monospace;white-space:nowrap}
 .search-bar .nav-btn{width:32px;height:32px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(30,30,36,.6);color:#8b94a8;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.search-bar .nav-btn:hover{border-color:rgba(255,255,255,.2);color:#fff}
 .search-bar .nav-btn svg{width:14px;height:14px}
 .search-bar .close{color:#5a6478;font-size:18px;padding:4px 8px;cursor:pointer}
 .kbd-panel{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
@@ -354,37 +363,32 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .pv-fullscreen-exit{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:99991;width:44px;height:44px;border-radius:50%;background:rgba(20,20,24,.9);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);color:#e8ecf4;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 8px 24px -8px rgba(0,0,0,.7)}
 .pv-fullscreen-exit.show{display:flex}
 .pv-fullscreen-exit svg{width:20px;height:20px}
-/* 移动端元素检查器改造 */
-.inspector-crosshair{position:fixed;inset:0;z-index:99980;pointer-events:none;display:none;background-image:linear-gradient(rgba(150,150,160,.1) 1px, transparent 1px),linear-gradient(90deg, rgba(150,150,160,.1) 1px, transparent 1px);background-size:40px 40px;}
+.inspector-crosshair{position:fixed;inset:0;z-index:99980;pointer-events:none;display:none;background-image:linear-gradient(rgba(150,150,160,.1) 1px, transparent 1px),linear-gradient(90deg, rgba(150,150,160,.1) 1px, transparent 1px);background-size:40px 40px}
 .inspector-crosshair.show{display:block}
 .inspector-crosshair::before,.inspector-crosshair::after{content:'';position:absolute;background:rgba(150,150,160,.4)}
 .inspector-crosshair::before{left:0;right:0;top:50%;height:1px}
 .inspector-crosshair::after{top:0;bottom:0;left:50%;width:1px}
-/* 顶部小提示条：检查模式开启时显示 */
 .inspector-hint{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:99986;background:rgba(20,20,24,.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:99px;padding:8px 16px;font-size:12px;color:#e8ecf4;display:none;align-items:center;gap:8px;box-shadow:0 8px 24px -8px rgba(0,0,0,.7);pointer-events:auto;white-space:nowrap}
 .inspector-hint.show{display:flex}
 .inspector-hint .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8);animation:pulse-dot 1.5s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 .inspector-hint .exit{padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;font-size:11px;margin-left:4px;cursor:pointer;font-family:inherit}
-/* 元素选中后的悬浮小窗 */
 .inspector-popover{position:fixed;z-index:99988;background:rgba(15,15,18,.98);backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);border:1px solid rgba(255,255,255,.15);border-radius:16px;box-shadow:0 20px 60px -16px rgba(0,0,0,.9);display:none;flex-direction:column;width:calc(100vw - 32px);max-width:360px;max-height:60vh;overflow:hidden;animation:pop-in .2s ease}
 .inspector-popover.show{display:flex}
 @keyframes pop-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-.inspector-popover-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;cursor:grab;user-select:none}
+.inspector-popover-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
 .inspector-popover-title{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#e8ecf4;min-width:0;flex:1}
 .inspector-popover-title .tag{font-size:11px;color:#a5d6ff;font-family:Consolas,monospace;background:rgba(165,214,255,.1);padding:2px 8px;border-radius:6px;border:1px solid rgba(165,214,255,.2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .inspector-popover-actions{display:flex;gap:6px;flex-shrink:0}
 .inspector-popover-btn{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#8b94a8;font-size:11px;font-family:inherit;cursor:pointer;min-height:30px;display:inline-flex;align-items:center;gap:4px}
 .inspector-popover-btn:hover{border-color:rgba(255,255,255,.2);color:#fff}
-.inspector-popover-btn.primary{background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff}
 .inspector-popover-btn.close{padding:5px 8px;color:#5a6478}
 .inspector-popover-btn.close:hover{color:#fca5a5;border-color:rgba(239,68,68,.4)}
 .inspector-popover-preview{background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.06);height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
-.inspector-popover-preview iframe{width:100%;height:100%;border:none;background:#fff;border-radius:6px;transform-origin:top left}
+.inspector-popover-preview iframe{width:100%;height:100%;border:none;background:#fff;border-radius:6px}
 .inspector-popover-body{flex:1;overflow-y:auto;padding:10px 14px;-webkit-overflow-scrolling:touch;min-height:0}
 .inspector-popover-foot{display:flex;gap:6px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .inspector-popover-foot button{flex:1;padding:8px;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;min-height:36px}
-/* 放大查看模态 */
 .inspector-magnify{position:fixed;inset:0;z-index:99992;background:rgba(5,5,6,.98);backdrop-filter:blur(20px);display:none;flex-direction:column}
 .inspector-magnify.show{display:flex}
 .inspector-magnify-head{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
@@ -400,9 +404,18 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .inspector-magnify-foot button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;min-height:46px}
 .inspector-magnify-foot button.primary{background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.15);color:#fff}
 .inspector-magnify-foot button.secondary{background:rgba(30,30,36,.6);border:1px solid rgba(255,255,255,.1);color:#c9d1e3}
-/* 全屏预览增强（移动端） */
-.pv-wrap.preview-fullscreen.mobile-fs{padding:0;padding-top:0;padding-bottom:0}
-.pv-wrap.preview-fullscreen.mobile-fs .pv{border-radius:0;border:none}
+/* Toast */
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(100px);z-index:99999;background:rgba(20,20,24,.98);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;font-size:13px;color:#e8ecf4;box-shadow:0 20px 60px -16px rgba(0,0,0,.9);transition:transform .3s cubic-bezier(.2,.8,.2,1);pointer-events:none;max-width:calc(100vw - 40px);text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+/* 分享卡片画布 */
+.share-card-canvas{max-width:100%;height:auto;border-radius:12px;box-shadow:0 12px 40px -12px rgba(0,0,0,.8)}
+/* GitHub 上传 */
+.gh-step{padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:12px;line-height:1.5;color:#8b94a8;margin-bottom:10px}
+.gh-step b{color:#dbe4f5}
+/* 缩放开关 */
+.zoom-toggle{position:absolute;right:10px;bottom:10px;z-index:15;width:36px;height:36px;border-radius:9px;background:rgba(20,20,24,.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);color:#8b94a8;cursor:pointer;display:none;align-items:center;justify-content:center}
+.zoom-toggle:hover,.zoom-toggle.active{border-color:rgba(255,255,255,.25);color:#fff;background:rgba(60,60,68,.85)}
+.zoom-toggle svg{width:16px;height:16px}
 @media (max-width: 900px), (pointer: coarse) {
   .app{flex-direction:column;height:100%}
   .panel{display:none;height:100%}
@@ -411,7 +424,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .mobile-tabs{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,15,18,.92);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom);height:calc(60px + env(safe-area-inset-bottom))}
   body.fullscreen-mode .mobile-tabs{display:none!important}
   .mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:#5a6478;cursor:pointer;font-family:inherit;font-size:10.5px;font-weight:600;transition:all .18s;position:relative;padding:8px 4px;-webkit-tap-highlight-color:transparent}
-  .mtab svg{width:22px;height:22px;transition:all .18s}
+  .mtab svg{width:22px;height:22px}
   .mtab.active{color:#e8ecf4}
   .mtab.active svg{color:#e8ecf4;filter:drop-shadow(0 0 8px rgba(200,200,220,.4))}
   .mtab .badge{position:absolute;top:6px;right:50%;margin-right:-18px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;display:none}
@@ -419,11 +432,11 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .mtab:active{transform:scale(.93)}
   .inspector{display:none!important}
   .head{padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top))}
-  body.fullscreen-mode .head{padding-top:12px;display:none}
+  body.fullscreen-mode .head{display:none}
   .settings{padding:10px 14px;max-height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .settings.collapsed{max-height:44px;padding-top:8px;padding-bottom:8px}
   .field input,.field select{font-size:16px;padding:12px 12px}
-  .box textarea{font-size:16px;height:72px}
+  .box textarea{font-size:16px}
   .msgs{padding:14px;min-height:120px;flex:1}
   .bubble{font-size:13.5px;line-height:1.65}
   .av{width:26px;height:26px;border-radius:8px}
@@ -438,10 +451,11 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .attach-item{padding:4px 6px;font-size:10.5px;max-width:140px}
   .attach-item img{width:24px;height:24px}
   .code{padding:8px 10px;gap:6px;min-height:0}
-  .tools{gap:5px;padding:8px 2px 4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .tools::-webkit-scrollbar{display:none}
-  .tool{padding:7px 10px;font-size:11px;min-height:34px;flex-shrink:0}
-  .tool svg{width:12px;height:12px}
+  .tool-groups{gap:5px;padding:8px 2px 4px}
+  .tool-group-btn{padding:7px 10px;font-size:11px;min-height:34px}
+  .tool-group-btn svg{width:13px;height:13px}
+  .tool-panel{padding:10px}
+  .tool{padding:7px 10px;font-size:11px;min-height:34px}
   .comp-layout{flex-direction:column;gap:6px;flex:1;min-height:0;overflow:hidden}
   .comp-side{width:100%;max-height:none;flex-shrink:0;flex-direction:row;border-radius:10px;height:60px}
   .comp-side-head{writing-mode:initial;width:auto;border-bottom:none;border-right:1px solid rgba(255,255,255,.06);padding:8px;flex-shrink:0;font-size:10.5px}
@@ -487,8 +501,8 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   .qcard{min-height:60px;padding:14px}
   body.keyboard-open .mobile-tabs{display:none!important}
   body.keyboard-open .composer{padding-bottom:8px}
-  /* 全屏模式下隐藏其他 UI */
   body.fullscreen-mode .mtab{display:none}
+  .zoom-toggle{display:flex}
 }
 @media (max-width: 380px) {
   .pv-grid{grid-template-columns:1fr}
@@ -604,23 +618,56 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
       <div class="hist-list" id="histList"></div>
     </div>
     <div class="code">
-      <div class="tools">
-        <button class="tool" id="copyBtn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
-        <button class="tool" id="dlBtn" onclick="downloadZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ZIP</button>
-        <button class="tool" onclick="exportProjectJSON()" title="导出工程为 JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出</button>
-        <button class="tool" onclick="importProjectJSON()" title="从 JSON 导入工程"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入</button>
-        <button class="tool" onclick="mergeToSingleHtml()" title="合并为单 HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>合并</button>
-        <button class="tool" onclick="downloadSingleHtml()" title="下载为单 HTML 文件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>单HTML</button>
-        <button class="tool" onclick="openPreviewInNewWindow()" title="新窗口打开预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>新窗口</button>
-        <button class="tool" onclick="showReplaceBar()" title="查找替换 (Ctrl+H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>替换</button>
-        <button class="tool" id="fmtBtn" onclick="formatCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>格式化</button>
-        <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
-        <button class="tool" onclick="addCurrentToFavorites()" title="把当前版本加入收藏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</button>
-        <button class="tool" onclick="showTemplates()" title="Prompt 模板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
-        <button class="tool" onclick="insertSnippet('color')" title="颜色选择器"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>取色</button>
-        <button class="tool" onclick="insertSnippet('image')" title="插入占位图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>占位图</button>
-        <button class="tool" onclick="insertSnippet('lorem')" title="插入 Lorem 文本"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Lorem</button>
-        <button class="tool" onclick="showPromptDropdown()" title="常用 prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>常用</button>
+      <div class="tool-groups">
+        <button class="tool-group-btn" data-group="file" onclick="toggleToolGroup('file')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>文件</button>
+        <button class="tool-group-btn" data-group="edit" onclick="toggleToolGroup('edit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>编辑</button>
+        <button class="tool-group-btn" data-group="insert" onclick="toggleToolGroup('insert')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>插入</button>
+        <button class="tool-group-btn" data-group="share" onclick="toggleToolGroup('share')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享</button>
+        <button class="tool-group-btn" data-group="prompt" onclick="toggleToolGroup('prompt')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>Prompt</button>
+      </div>
+      <div class="tool-panel" id="toolPanelFile">
+        <div class="tools">
+          <button class="tool" id="dlBtn" onclick="downloadZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ZIP</button>
+          <button class="tool" onclick="downloadSingleHtml()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>单 HTML</button>
+          <button class="tool" onclick="exportProjectJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出工程</button>
+          <button class="tool" onclick="importProjectJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入工程</button>
+          <button class="tool" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>导出 PDF</button>
+        </div>
+      </div>
+      <div class="tool-panel" id="toolPanelEdit">
+        <div class="tools">
+          <button class="tool" id="copyBtn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
+          <button class="tool" onclick="mergeToSingleHtml()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>合并</button>
+          <button class="tool" onclick="undoCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>撤销</button>
+          <button class="tool" onclick="redoCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>重做</button>
+          <button class="tool" onclick="showReplaceBar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>替换</button>
+          <button class="tool" id="fmtBtn" onclick="formatCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>格式化</button>
+          <button class="tool" id="snapBtn" onclick="manualSnapshot()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>快照</button>
+          <button class="tool" onclick="addCurrentToFavorites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</button>
+        </div>
+      </div>
+      <div class="tool-panel" id="toolPanelInsert">
+        <div class="tools">
+          <button class="tool" onclick="insertSnippet('color')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>取色</button>
+          <button class="tool" onclick="insertSnippet('image')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>占位图</button>
+          <button class="tool" onclick="insertSnippet('lorem')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Lorem</button>
+        </div>
+      </div>
+      <div class="tool-panel" id="toolPanelShare">
+        <div class="tools">
+          <button class="tool" onclick="openPreviewInNewWindow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>新窗口</button>
+          <button class="tool" onclick="showQRCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>二维码</button>
+          <button class="tool" onclick="showComponentQRCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>组件二维码</button>
+          <button class="tool" onclick="showShareCard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>分享卡片</button>
+          <button class="tool" onclick="openGitHubUpload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>上传 GitHub</button>
+        </div>
+      </div>
+      <div class="tool-panel" id="toolPanelPrompt">
+        <div class="tools">
+          <button class="tool" onclick="showTemplates()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
+          <button class="tool" onclick="showPromptDropdown()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>常用</button>
+          <button class="tool" onclick="saveCurrentPrompt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>存当前</button>
+        </div>
       </div>
       <div class="replace-bar" id="replaceBar">
         <input type="text" id="replaceFind" placeholder="查找…" onkeydown="replaceKeydown(event)">
@@ -661,7 +708,6 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <button class="btn-icon" onclick="takeScreenshot()" title="截图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
         <button class="btn-icon" onclick="toggleInspector()" title="元素检查器"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg></button>
         <button class="btn-icon" onclick="togglePreviewFullscreen()" title="预览全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
-        <button class="btn-icon" onclick="showQRCode()" title="分享二维码"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button>
         <button class="tool" onclick="refreshPreview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>刷新</button>
       </div>
     </div>
@@ -676,6 +722,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
       <div class="win-inputs"><input type="number" id="winW" placeholder="宽" min="180"><span>×</span><input type="number" id="winH" placeholder="高" min="140"><button class="tool" style="padding:6px 8px" onclick="applyCustomSize()">应用</button></div>
       <div style="flex:1"></div>
       <button class="tool" onclick="toggleRotate()" title="横竖屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+      <button class="tool" id="zoomToggle" onclick="toggleZoomMode()" title="开启缩放"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>缩放</button>
       <button class="tool" onclick="fillPreview()" title="铺满"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg></button>
       <button class="tool" onclick="resetViewport()" title="重置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
     </div>
@@ -686,6 +733,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <div class="overlay" id="overlay"><div class="spin"></div><p id="overlayText">正在生成…</p><div class="timer" id="timer" style="display:none">已用 <b id="timerNum">0.0</b> 秒</div></div>
         <div class="rz n" data-dir="n"></div><div class="rz s" data-dir="s"></div><div class="rz e" data-dir="e"></div><div class="rz w" data-dir="w"></div>
         <div class="rz nw" data-dir="nw"></div><div class="rz ne" data-dir="ne"></div><div class="rz sw" data-dir="sw"></div><div class="rz se" data-dir="se"></div>
+        <button class="zoom-toggle" id="zoomToggleFloat" onclick="toggleZoomMode()" title="缩放开关"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
       </div>
     </div>
     <div class="inspector" id="inspector">
@@ -711,6 +759,15 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <button onclick="doCut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>剪切</button>
   <button onclick="doPaste()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>粘贴</button>
   <button onclick="doSelectAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 7 4"/><polyline points="20 7 20 4 17 4"/><polyline points="4 17 4 20 7 20"/><polyline points="20 17 20 20 17 20"/><path d="M9 4h6M9 20h6M4 9v6M20 9v6"/></svg>全选</button>
+</div>
+
+<!-- 组件长按菜单 -->
+<div class="copy-menu" id="compMenu">
+  <button onclick="compMenuRename()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>重命名</button>
+  <button onclick="compMenuDuplicate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制一份</button>
+  <button onclick="compMenuToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>启用/禁用</button>
+  <div class="divider"></div>
+  <button class="danger" onclick="compMenuDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>删除</button>
 </div>
 
 <div class="modal-mask" id="templateModal">
@@ -740,9 +797,9 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <div class="modal">
     <div class="modal-head"><span id="editTemplateTitle">编辑模板</span><span class="close" onclick="closeEditTemplate()">✕</span></div>
     <div class="modal-body">
-      <div class="field"><label>模板名称</label><input type="text" id="editTemplateName" placeholder="如：博客首页"></div>
+      <div class="field"><label>模板名称</label><input type="text" id="editTemplateName"></div>
       <div class="field"><label>Prompt 内容（用 {变量名} 表示变量）</label><textarea id="editTemplatePrompt" style="min-height:100px"></textarea></div>
-      <div class="field"><label>变量列表（每行一个：变量名|标签|默认值）</label><textarea id="editTemplateVars" style="min-height:80px;font-family:Consolas,monospace;font-size:12px" placeholder="color|主题色|紫色&#10;dark|风格|深色"></textarea></div>
+      <div class="field"><label>变量列表（每行一个：变量名|标签|默认值）</label><textarea id="editTemplateVars" style="min-height:80px;font-family:Consolas,monospace;font-size:12px"></textarea></div>
     </div>
     <div class="modal-foot"><button class="btn" onclick="closeEditTemplate()">取消</button><button class="btn" onclick="saveEditTemplate()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">保存</button></div>
   </div>
@@ -750,23 +807,50 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 
 <div class="modal-mask" id="qrModal">
   <div class="modal">
-    <div class="modal-head"><span>分享二维码</span><span class="close" onclick="closeQRCode()">✕</span></div>
+    <div class="modal-head"><span id="qrModalTitle">分享二维码</span><span class="close" onclick="closeQRCode()">✕</span></div>
     <div class="modal-body" style="align-items:center;text-align:center">
       <div id="qrImageWrap" style="background:#fff;padding:16px;border-radius:12px"></div>
-      <p style="font-size:12px;color:#8b94a8;line-height:1.6;margin-top:10px">扫码或分享链接，在手机上打开当前页面</p>
+      <p style="font-size:12px;color:#8b94a8;line-height:1.6;margin-top:10px" id="qrHint">扫码或分享链接，在手机上打开当前页面</p>
       <input type="text" id="qrLinkText" readonly style="background:rgba(8,8,10,.7);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:10px;font-size:11px;font-family:monospace;width:100%">
     </div>
     <div class="modal-foot">
-      <button class="btn" onclick="copyShareLink()">复制链接</button>
-      <button class="btn" onclick="shareWithWebAPI()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">分享</button>
+      <button class="btn" onclick="copyShareLink()">复制</button>
+      <button class="btn" onclick="downloadQRCode()">下载</button>
     </div>
   </div>
 </div>
 
-<div class="modal-mask" id="promptDropdownModal">
+<div class="modal-mask" id="shareCardModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><span>分享卡片</span><span class="close" onclick="closeShareCard()">✕</span></div>
+    <div class="modal-body" style="align-items:center;text-align:center">
+      <canvas id="shareCardCanvas" class="share-card-canvas"></canvas>
+      <p style="font-size:12px;color:#8b94a8;line-height:1.6;margin-top:6px">截图 + prompt + 二维码拼成一张图</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeShareCard()">关闭</button>
+      <button class="btn" onclick="downloadShareCard()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">下载</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="githubModal">
   <div class="modal">
-    <div class="modal-head"><span>常用 Prompt</span><span class="close" onclick="closePromptDropdown()">✕</span></div>
-    <div class="modal-body" id="promptDropdownList"></div>
+    <div class="modal-head"><span>上传到 GitHub</span><span class="close" onclick="closeGitHubUpload()">✕</span></div>
+    <div class="modal-body">
+      <div class="gh-step">
+        <b>说明：</b>需要 GitHub Personal Access Token（勾选 repo 权限）。<a href="https://github.com/settings/tokens/new" target="_blank" style="color:#a78bfa">去创建</a>
+      </div>
+      <div class="field"><label>GitHub Token</label><input type="password" id="ghToken" placeholder="ghp_..."></div>
+      <div class="field"><label>仓库名（会新建）</label><input type="text" id="ghRepo" placeholder="code-utopia-page"></div>
+      <div class="field"><label>仓库描述（可选）</label><input type="text" id="ghDesc" placeholder="由 Code Utopia 生成"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#8b94a8;cursor:pointer;user-select:none">
+        <input type="checkbox" id="ghEnablePages" checked style="accent-color:#6d5cff;cursor:pointer">
+        启用 GitHub Pages 托管（公开访问）
+      </label>
+      <div class="conn" id="ghStatus" style="margin-top:4px"><span class="dot"></span><span class="txt">未开始</span></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeGitHubUpload()">取消</button><button class="btn" id="ghUploadBtn" onclick="doGitHubUpload()" style="background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">开始上传</button></div>
   </div>
 </div>
 
@@ -798,39 +882,27 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 </button>
 
-<!-- 检查器顶部提示 -->
 <div class="inspector-hint" id="inspectorHint">
   <span class="dot"></span>
   <span>点击元素查看</span>
   <button class="exit" onclick="exitMobileInspector()">退出</button>
 </div>
-
 <div class="inspector-crosshair" id="inspectorCrosshair"></div>
-
-<!-- 选中元素后的小悬浮窗 -->
 <div class="inspector-popover" id="inspectorPopover">
   <div class="inspector-popover-head" id="inspectorPopoverHead">
-    <div class="inspector-popover-title">
-      <span class="tag" id="inspPopTag">元素</span>
-    </div>
+    <div class="inspector-popover-title"><span class="tag" id="inspPopTag">元素</span></div>
     <div class="inspector-popover-actions">
-      <button class="inspector-popover-btn" onclick="magnifyInspector()" title="放大">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-      </button>
-      <button class="inspector-popover-btn close" onclick="closeInspectorPopover()" title="关闭">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <button class="inspector-popover-btn" onclick="magnifyInspector()" title="放大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+      <button class="inspector-popover-btn close" onclick="closeInspectorPopover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
   </div>
   <div class="inspector-popover-preview" id="inspPopPreview"></div>
   <div class="inspector-popover-body" id="inspPopBody"></div>
   <div class="inspector-popover-foot">
-    <button class="inspector-popover-btn primary" onclick="applyInspectorChanges()">应用</button>
-    <button class="inspector-popover-btn" onclick="reselectInspector()">重选</button>
+    <button class="inspector-popover-btn" onclick="applyInspectorChanges()" style="flex:1;background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff">应用</button>
+    <button class="inspector-popover-btn" onclick="reselectInspector()" style="flex:1">重选</button>
   </div>
 </div>
-
-<!-- 放大编辑 -->
 <div class="inspector-magnify" id="inspectorMagnify">
   <div class="inspector-magnify-head">
     <h3>元素编辑 <span class="tag" id="inspMagTag">元素</span></h3>
@@ -846,9 +918,12 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 <script src="app.js"></script>
 </body>
