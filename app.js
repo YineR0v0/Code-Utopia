@@ -316,8 +316,7 @@ function renderProjects(){
   html += '<div class="new-proj" onclick="createProject()"><div class="plus">＋</div><span>新建工程</span></div>';
   if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
   grid.innerHTML = html;
-}
-/* ================= 工程操作 ================= */
+}/* ================= 工程操作 ================= */
 function createProject(){
   var name = prompt('新工程名称：', '新工程'); if(name === null) return;
   name = name.trim() || '新工程';
@@ -438,7 +437,6 @@ function buildPreviewHtml(){
 function refreshPreview(){
   var iframe = $('preview');
   if(!iframe) return;
-  // 保持缩放
   if(state.zoomMode){
     var html = buildPreviewHtml();
     iframe.srcdoc = html;
@@ -723,7 +721,7 @@ function redoCode(){
   toast('↷ 已重做');
 }
 
-/* ================= 工具栏分组 ================= */
+/* ================= 工具栏分组（已修复） ================= */
 var TOOL_GROUP_MAP = {
   file: 'toolPanelFile',
   edit: 'toolPanelEdit',
@@ -731,18 +729,30 @@ var TOOL_GROUP_MAP = {
   share: 'toolPanelShare',
   prompt: 'toolPanelPrompt'
 };
+
 function toggleToolGroup(group){
   var panelId = TOOL_GROUP_MAP[group];
   var targetPanel = panelId ? $(panelId) : null;
   if(!targetPanel){ console.warn('未找到面板:', group, panelId); return; }
+
   var willShow = !targetPanel.classList.contains('show');
+
   // 先全部隐藏
   Object.keys(TOOL_GROUP_MAP).forEach(function(k){
     var p = $(TOOL_GROUP_MAP[k]);
     if(p) p.classList.remove('show');
   });
-  // 需要显示就显示
-  if(willShow) targetPanel.classList.add('show');
+
+  var mask = $('toolPanelMask');
+
+  // 需要显示就显示，并同步遮罩
+  if(willShow){
+    targetPanel.classList.add('show');
+    if(mask) mask.classList.add('show');
+  } else {
+    if(mask) mask.classList.remove('show');
+  }
+
   // 更新按钮高亮
   var btns = document.querySelectorAll('.tool-group-btn');
   for(var i = 0; i < btns.length; i++){
@@ -750,7 +760,16 @@ function toggleToolGroup(group){
   }
 }
 
-/* ================= 组件管理 ================= */
+function closeAllToolPanels(){
+  Object.keys(TOOL_GROUP_MAP).forEach(function(k){
+    var p = $(TOOL_GROUP_MAP[k]);
+    if(p) p.classList.remove('show');
+  });
+  var mask = $('toolPanelMask');
+  if(mask) mask.classList.remove('show');
+  var btns = document.querySelectorAll('.tool-group-btn');
+  for(var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+}/* ================= 组件管理 ================= */
 function renderComponents(){
   var list = $('compList');
   var html = '';
@@ -1029,7 +1048,6 @@ function snapshot(prompt){
   state.historyIndex = state.history.length - 1;
   renderHistory();
   saveCurrentProject();
-  // 自动快照：每5次生成再额外存一份到收藏(可选)
   try{
     var genCount = parseInt(localStorage.getItem('cu-gen-count') || '0', 10) + 1;
     localStorage.setItem('cu-gen-count', String(genCount));
@@ -1137,7 +1155,6 @@ function applyZoomTransform(){
   iframe.style.height = (100 / state.zoomScale) + '%';
 }
 (function(){
-  // 桌面滚轮
   document.addEventListener('wheel', function(e){
     if(!state.zoomMode) return;
     var pv = $('pv');
@@ -1147,7 +1164,6 @@ function applyZoomTransform(){
     state.zoomScale = Math.max(0.3, Math.min(3, state.zoomScale + delta));
     applyZoomTransform();
   }, { passive: false });
-  // 移动端双指
   var pv = $('pv');
   var touchStartDist = 0, touchStartScale = 1;
   if(pv){
@@ -1302,20 +1318,17 @@ function showShareCard(){
   try{
     var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
     html2canvas(iframeDoc.body, { backgroundColor: '#ffffff', scale: 2, useCORS: true }).then(function(shot){
-      // 画布：宽 1080，高 = 封面 600 + 提示词 200 + 底部二维码区 200
       var canvas = $('shareCardCanvas');
       var W = 1080, H = 1000;
       canvas.width = W; canvas.height = H;
       var ctx = canvas.getContext('2d');
 
-      // 背景
       var bgGrad = ctx.createLinearGradient(0, 0, W, H);
       bgGrad.addColorStop(0, '#0f1117');
       bgGrad.addColorStop(1, '#1a1d24');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // 顶部区域：Logo + 标题
       ctx.fillStyle = '#e8ecf4';
       ctx.font = 'bold 42px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'left';
@@ -1324,7 +1337,6 @@ function showShareCard(){
       ctx.fillStyle = '#8b94a8';
       ctx.fillText('AI 生成的页面', 60, 120);
 
-      // 截图区域
       var shotW = W - 120;
       var shotH = 560;
       var shotAspect = shot.width / shot.height;
@@ -1333,7 +1345,6 @@ function showShareCard(){
       var drawX = (W - drawW) / 2;
       var drawY = 150;
 
-      // 圆角截图
       ctx.save();
       roundRect(ctx, drawX - 6, drawY - 6, drawW + 12, drawH + 12, 24);
       ctx.fillStyle = '#2a3142';
@@ -1346,7 +1357,6 @@ function showShareCard(){
       ctx.drawImage(shot, drawX, drawY, drawW, drawH);
       ctx.restore();
 
-      // 提示词区域
       var promptY = drawY + drawH + 50;
       ctx.fillStyle = '#5a6478';
       ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
@@ -1359,7 +1369,6 @@ function showShareCard(){
         ctx.fillText(lines[i] + (i === 2 && lines.length > 3 ? '…' : ''), 60, promptY + 42 + i * 38);
       }
 
-      // 底部二维码区
       var qrSize = 140;
       var qrX = W - 60 - qrSize;
       var qrY = H - 60 - qrSize;
@@ -1369,7 +1378,6 @@ function showShareCard(){
         url = compressed.length < 30000 ? location.origin + location.pathname + '#share=' + compressed : location.href;
       }catch(e){ url = location.href; }
 
-      // 二维码绘制（用离屏 canvas 渲染 qrcodejs，再 drawImage）
       try{
         var tmpDiv = document.createElement('div');
         tmpDiv.style.cssText = 'position:absolute;left:-9999px';
@@ -1383,7 +1391,6 @@ function showShareCard(){
           if(qrImg.tagName === 'IMG'){
             var tmpImg = new Image();
             tmpImg.src = qrImg.src;
-            // 同步绘制可能失败，用 src 已经存到 dataURL 的
             try{ ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize); }catch(e){}
           } else {
             ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
@@ -1442,9 +1449,7 @@ function downloadShareCard(){
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
     toast('分享卡片已下载');
   }, 'image/png');
-}
-
-/* ================= 二维码分享 ================= */
+}/* ================= 二维码分享 ================= */
 var _lastQRUrl = '';
 function showQRCode(){
   var html = buildPreviewHtml();
@@ -1567,13 +1572,11 @@ function doGitHubUpload(){
   var content = btoa(unescape(encodeURIComponent(html)));
   var headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 
-  // Step 1: 获取用户名
   fetch('https://api.github.com/user', { headers: headers })
     .then(function(r){ if(!r.ok) throw new Error('Token 无效'); return r.json(); })
     .then(function(user){
       var owner = user.login;
       st.querySelector('.txt').textContent = '正在创建仓库 ' + owner + '/' + repo + '…';
-      // Step 2: 创建仓库
       return fetch('https://api.github.com/user/repos', {
         method: 'POST', headers: headers,
         body: JSON.stringify({ name: repo, description: desc, private: false, auto_init: false })
@@ -1586,7 +1589,6 @@ function doGitHubUpload(){
     .then(function(info){
       var owner = info.owner;
       st.querySelector('.txt').textContent = '正在上传文件…';
-      // Step 3: 尝试获取已存在的文件 sha（如果仓库已存在）
       var url = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + filename;
       return fetch(url, { headers: headers })
         .then(function(r){ return r.ok ? r.json() : null; })
@@ -1607,7 +1609,6 @@ function doGitHubUpload(){
           method: 'POST', headers: headers,
           body: JSON.stringify({ source: { branch: 'main', path: '/' } })
         }).then(function(r){
-          // 可能是 409（已存在）或 201（创建成功）
           return { owner: owner, pagesUrl: pagesUrl };
         }).catch(function(){ return { owner: owner, pagesUrl: pagesUrl }; });
       }
@@ -2232,9 +2233,7 @@ function restoreFromFavorites(i){
   state.activeComp = 0;
   setEditorValue(getActiveCompCode(), compLang(state.components[0]));
   renderComponents(); refreshPreview(); addMsg('assistant', '已从收藏恢复。', item.prompt || '');
-}
-
-/* ================= 生成 ================= */
+}/* ================= 生成 ================= */
 function generate(){
   var p = $('prompt').value.trim();
   if((!p && state.attachedFiles.length === 0) || state.loading) return;
@@ -2550,12 +2549,27 @@ function bindLongPress(el){
   el.addEventListener('touchcancel', function(){ if(timer){ clearTimeout(timer); timer = null; } });
 }
 (function(){ var targets = [$('prompt'), $('msgs'), $('fallbackTa')]; for(var i = 0; i < targets.length; i++) if(targets[i]) bindLongPress(targets[i]); })();
-document.addEventListener('click', function(e){ var menu = $('copyMenu'); if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu(); var compMenu = $('compMenu'); if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu(); });
-document.addEventListener('touchstart', function(e){ var menu = $('copyMenu'); if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu(); var compMenu = $('compMenu'); if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu(); }, { passive: true });var toolPanel = document.querySelector('.tool-panel.show');
-if(toolPanel && !toolPanel.contains(e.target) && !e.target.closest('.tool-group-btn')){
-  document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('show'); });
-  document.querySelectorAll('.tool-group-btn').forEach(function(b){ b.classList.remove('active'); });
-}
+
+/* 点击空白处关闭复制菜单/组件菜单/工具抽屉 */
+document.addEventListener('click', function(e){
+  var menu = $('copyMenu');
+  if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu();
+  var compMenu = $('compMenu');
+  if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu();
+
+  // 点击工具抽屉外部关闭（排除分组按钮自身，避免刚打开就被关掉）
+  var openPanel = document.querySelector('.tool-panel.show');
+  if(openPanel && !openPanel.contains(e.target) && !e.target.closest('.tool-group-btn')){
+    closeAllToolPanels();
+  }
+});
+
+document.addEventListener('touchstart', function(e){
+  var menu = $('copyMenu');
+  if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu();
+  var compMenu = $('compMenu');
+  if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu();
+}, { passive: true });
 
 /* 长按预览区 800ms 开启移动检查器 */
 (function(){
@@ -2585,7 +2599,6 @@ if(toolPanel && !toolPanel.contains(e.target) && !e.target.closest('.tool-group-
     prompt.addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); generate(); } });
     prompt.addEventListener('focus', function(){ setTimeout(function(){ document.body.classList.add('keyboard-open'); }, 100); });
     prompt.addEventListener('blur', function(){ setTimeout(function(){ document.body.classList.remove('keyboard-open'); }, 100); });
-    // 自动长高
     prompt.addEventListener('input', function(){ prompt.style.height = 'auto'; prompt.style.height = Math.min(240, prompt.scrollHeight) + 'px'; });
   }
   if(window.visualViewport){ window.visualViewport.addEventListener('resize', function(){ var vh = window.visualViewport.height; var wh = window.innerHeight; if(vh < wh * 0.75) document.body.classList.add('keyboard-open'); else document.body.classList.remove('keyboard-open'); }); }
@@ -2607,7 +2620,7 @@ document.addEventListener('keydown', function(e){
   else if(ctrl && e.key === '/'){ e.preventDefault(); if(isMobile()) switchMobileTab(state.mobileTab === 'chat' ? 'code' : (state.mobileTab === 'code' ? 'preview' : 'chat')); }
   else if(e.key === '?'){ e.preventDefault(); showKbdPanel(); }
   else if(e.key === 'Escape'){
-    closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery(); closeQRCode(); closePromptDropdown(); hideReplaceBar(); closeShareCard(); closeGitHubUpload(); closeCompMenu();
+    closeTemplates(); closeTemplateForm(); closeKbdPanel(); hideCopyMenu(); closeRenameProject(); closeEditTemplate(); closeDiff(); closeGallery(); closeQRCode(); closePromptDropdown(); hideReplaceBar(); closeShareCard(); closeGitHubUpload(); closeCompMenu(); closeAllToolPanels();
     if(state.mobileInspectorActive) exitMobileInspector();
   }
 });
@@ -2636,7 +2649,6 @@ window.addEventListener('load', function(){
   pushUndo();
   window.addEventListener('resize', function(){ try { applyViewport(); } catch(e){} try { if(state.editorReady && isMobile() && state.mobileTab === 'code') state.editor.layout(); } catch(e){} });
   window.addEventListener('fullscreenchange', function(){ setTimeout(function(){ try { applyViewport(); } catch(e){} try { if(state.editorReady) state.editor.layout(); } catch(e){} }, 200); });
-  // 自动保存草稿
   setInterval(function(){ try { saveCurrentProject(); } catch(e){} }, 10000);
   console.log('✅ Code Utopia 初始化完成');
 });
@@ -2663,7 +2675,7 @@ function renderGuide(){
     '<div class="quick"><div class="qlabel">试试这些</div>' +
     '<button class="qcard" onclick="quickGen(\'生成一个深色玻璃质感的登录页\')"><span class="ic">' + iconLogin + '</span><div class="txt"><b>登录页</b><span>玻璃质感</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个番茄钟计时器，圆形进度环\')"><span class="ic">' + iconTimer + '</span><div class="txt"><b>番茄钟</b><span>圆形进度</span></div><span class="arrow">→</span></button>' +
-    '<button class="qcard" onclick="quickGen(\'生成一个现代待办清单应用\')"><span class="ic">' + iconList + '</span><div class="txt"><b>待办清单</b><span>增删改</span></div><span class="arrow">→</span></button>' +
+    '<button class="qcard" onclick="quickGen(\'生成一个现代待办清单应用\')"><span class="ic">' + iconList + '</span><div class="txt"><b>待办清单</b><br>增删改</div></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个 SaaS 数据仪表盘\')"><span class="ic">' + iconDash + '</span><div class="txt"><b>数据仪表盘</b><span>导航·图表</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="randomInspiration()"><span class="ic">' + iconDice + '</span><div class="txt"><b>随机灵感</b><span>随机一个</span></div><span class="arrow">→</span></button>' +
     '</div>';
