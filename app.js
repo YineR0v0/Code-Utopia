@@ -277,46 +277,7 @@ function saveProjects(){
 }
 function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
 function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
-function closeProjects(){ $('projectsView').classList.remove('show'); }
-
-function getProjectPreviewText(p){
-  if(!p.components || p.components.length === 0) return '空工程';
-  for(var i = 0; i < p.components.length; i++){
-    var c = p.components[i];
-    if(c.type === 'html' && c.code && c.code.trim()){
-      var txt = c.code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      if(txt) return txt.slice(0, 80);
-    }
-  }
-  return p.components.length + ' 个组件';
-}
-function renderProjects(){
-  var q = ($('projSearch').value || '').toLowerCase();
-  var grid = $('projGrid');
-  var list = state.projects.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0; });
-  list.sort(function(a, b){ return b.updatedAt - a.updatedAt; });
-  var projIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
-  var html = '';
-  for(var i = 0; i < list.length; i++){
-    var p = list[i];
-    var active = p.id === state.activeProjectId ? ' active' : '';
-    var d = new Date(p.updatedAt);
-    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
-    var preview = getProjectPreviewText(p);
-    var msgCount = (p.messages || []).length;
-    var favCount = (p.favorites || []).length;
-    html += '<div class="proj-card' + active + '" onclick="switchProject(\'' + p.id + '\')">' +
-      '<div class="proj-actions"><button class="del" onclick="event.stopPropagation();openRenameProject(\'' + p.id + '\')" title="重命名">✎</button><button class="del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="删除">✕</button></div>' +
-      '<div class="pemoji">' + projIconSvg + '</div>' +
-      '<h3>' + esc(p.name) + '</h3>' +
-      '<div class="proj-preview">' + esc(preview) + '</div>' +
-      '<div class="meta">' + (p.components || []).length + ' 组件 · ' + (p.history || []).length + ' 版本 · ' + favCount + ' 收藏 · ' + msgCount + ' 对话<br>' + time + '</div>' +
-      '</div>';
-  }
-  html += '<div class="new-proj" onclick="createProject()"><div class="plus">＋</div><span>新建工程</span></div>';
-  if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
-  grid.innerHTML = html;
-}/* ================= 工程操作 ================= */
+function closeProjects(){ $('projectsView').classList.remove('show'); }/* ================= 工程操作 ================= */
 function createProject(){
   var name = prompt('新工程名称：', '新工程'); if(name === null) return;
   name = name.trim() || '新工程';
@@ -721,7 +682,7 @@ function redoCode(){
   toast('↷ 已重做');
 }
 
-/* ================= 工具栏分组（已修复） ================= */
+/* ================= 工具栏分组（修复版） ================= */
 var TOOL_GROUP_MAP = {
   file: 'toolPanelFile',
   edit: 'toolPanelEdit',
@@ -745,7 +706,6 @@ function toggleToolGroup(group){
 
   var mask = $('toolPanelMask');
 
-  // 需要显示就显示，并同步遮罩
   if(willShow){
     targetPanel.classList.add('show');
     if(mask) mask.classList.add('show');
@@ -2550,13 +2510,12 @@ function bindLongPress(el){
 }
 (function(){ var targets = [$('prompt'), $('msgs'), $('fallbackTa')]; for(var i = 0; i < targets.length; i++) if(targets[i]) bindLongPress(targets[i]); })();
 
-/* 点击空白处关闭复制菜单/组件菜单/工具抽屉 */
+/* 点击空白处关闭复制菜单/组件菜单（工具抽屉交给遮罩关闭，不在这里处理） */
 document.addEventListener('click', function(e){
   var menu = $('copyMenu');
   if(menu && menu.classList.contains('show') && !menu.contains(e.target)) hideCopyMenu();
   var compMenu = $('compMenu');
   if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu();
-
 });
 
 document.addEventListener('touchstart', function(e){
@@ -2670,7 +2629,7 @@ function renderGuide(){
     '<div class="quick"><div class="qlabel">试试这些</div>' +
     '<button class="qcard" onclick="quickGen(\'生成一个深色玻璃质感的登录页\')"><span class="ic">' + iconLogin + '</span><div class="txt"><b>登录页</b><span>玻璃质感</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个番茄钟计时器，圆形进度环\')"><span class="ic">' + iconTimer + '</span><div class="txt"><b>番茄钟</b><span>圆形进度</span></div><span class="arrow">→</span></button>' +
-    '<button class="qcard" onclick="quickGen(\'生成一个现代待办清单应用\')"><span class="ic">' + iconList + '</span><div class="txt"><b>待办清单</b><br>增删改</div></button>' +
+    '<button class="qcard" onclick="quickGen(\'生成一个现代待办清单应用\')"><span class="ic">' + iconList + '</span><div class="txt"><b>待办清单</b><span>增删改</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="quickGen(\'生成一个 SaaS 数据仪表盘\')"><span class="ic">' + iconDash + '</span><div class="txt"><b>数据仪表盘</b><span>导航·图表</span></div><span class="arrow">→</span></button>' +
     '<button class="qcard" onclick="randomInspiration()"><span class="ic">' + iconDice + '</span><div class="txt"><b>随机灵感</b><span>随机一个</span></div><span class="arrow">→</span></button>' +
     '</div>';
