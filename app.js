@@ -2557,11 +2557,6 @@ document.addEventListener('click', function(e){
   var compMenu = $('compMenu');
   if(compMenu && compMenu.classList.contains('show') && !compMenu.contains(e.target)) closeCompMenu();
 
-  // 点击工具抽屉外部关闭（排除分组按钮自身，避免刚打开就被关掉）
-  var openPanel = document.querySelector('.tool-panel.show');
-  if(openPanel && !openPanel.contains(e.target) && !e.target.closest('.tool-group-btn')){
-    closeAllToolPanels();
-  }
 });
 
 document.addEventListener('touchstart', function(e){
