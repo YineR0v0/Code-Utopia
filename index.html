@@ -115,13 +115,13 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .btn-cont:active{transform:scale(.97)}
 .btn-cont svg{width:15px;height:15px}
 .code{flex:1;display:flex;flex-direction:column;padding:10px 12px;gap:8px;min-height:0;position:relative}
-.tools{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;padding-bottom:2px;flex-shrink:0}
+.tools{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;flex-shrink:0;min-width:0;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
 .tools::-webkit-scrollbar{display:none}
 .tool{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;background:rgba(20,20,24,.6);border:1px solid rgba(255,255,255,.08);color:#8b94a8;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;backdrop-filter:blur(10px);transition:all .15s;white-space:nowrap;min-height:36px;flex-shrink:0}
 .tool:active{transform:scale(.95)}
 .tool.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.08)}
 .tool.danger:hover{border-color:rgba(239,68,68,.5);color:#fca5a5}
-.tool svg{width:13px;height:13px}
+.tool svg{width:13px;height:13px;flex-shrink:0}
 .comp-layout{flex:1;display:flex;gap:8px;min-height:0;overflow:hidden}
 .comp-side{width:170px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(8,8,10,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;backdrop-filter:blur(14px)}
 .comp-side-head{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;color:#8b94a8;font-weight:600;display:flex;justify-content:space-between;align-items:center}
@@ -354,42 +354,62 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .pv-fullscreen-exit{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:99991;width:44px;height:44px;border-radius:50%;background:rgba(20,20,24,.9);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);color:#e8ecf4;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 8px 24px -8px rgba(0,0,0,.7)}
 .pv-fullscreen-exit.show{display:flex}
 .pv-fullscreen-exit svg{width:20px;height:20px}
+/* 移动端元素检查器改造 */
 .inspector-crosshair{position:fixed;inset:0;z-index:99980;pointer-events:none;display:none;background-image:linear-gradient(rgba(150,150,160,.1) 1px, transparent 1px),linear-gradient(90deg, rgba(150,150,160,.1) 1px, transparent 1px);background-size:40px 40px;}
 .inspector-crosshair.show{display:block}
 .inspector-crosshair::before,.inspector-crosshair::after{content:'';position:absolute;background:rgba(150,150,160,.4)}
 .inspector-crosshair::before{left:0;right:0;top:50%;height:1px}
 .inspector-crosshair::after{top:0;bottom:0;left:50%;width:1px}
-.inspector-mobile{position:fixed;left:0;right:0;bottom:0;z-index:99985;background:rgba(15,15,18,.98);backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);border-top:1px solid rgba(255,255,255,.12);border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom);transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;max-height:60vh;box-shadow:0 -20px 60px -16px rgba(0,0,0,.8)}
-.inspector-mobile.show{transform:translateY(0)}
-.inspector-mobile-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
-.inspector-mobile-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#e8ecf4}
-.inspector-mobile-title .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8);animation:pulse-dot 1.5s ease-in-out infinite}
+/* 顶部小提示条：检查模式开启时显示 */
+.inspector-hint{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:99986;background:rgba(20,20,24,.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:99px;padding:8px 16px;font-size:12px;color:#e8ecf4;display:none;align-items:center;gap:8px;box-shadow:0 8px 24px -8px rgba(0,0,0,.7);pointer-events:auto;white-space:nowrap}
+.inspector-hint.show{display:flex}
+.inspector-hint .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8);animation:pulse-dot 1.5s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-.inspector-mobile-close{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(30,30,36,.6);color:#c9d1e3;font-size:12.5px;font-family:inherit;cursor:pointer}
-.inspector-mobile-close:active{transform:scale(.95)}
-.inspector-mobile-body{flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;min-height:80px}
-.inspector-mobile-actions{display:flex;gap:8px;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.inspector-mobile-actions button{flex:1;padding:11px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;min-height:44px}
-.inspector-mobile-actions button:first-child{background:linear-gradient(135deg,#3a3a42,#1a1a20);color:#fff;border:1px solid rgba(255,255,255,.12)}
-.inspector-mobile-actions button:last-child{background:rgba(30,30,36,.6);color:#c9d1e3;border:1px solid rgba(255,255,255,.1)}
-.inspector-mobile-actions button:active{transform:scale(.97)}
-body.light-theme{background:#f5f5f7;color:#1a1a1a;background-image:radial-gradient(1000px 700px at 15% -5%, rgba(120,120,140,.06), transparent 55%)}
-body.light-theme .panel{background:rgba(255,255,255,.7);border-color:rgba(0,0,0,.08)}
-body.light-theme .head{background:rgba(240,240,245,.5);border-color:rgba(0,0,0,.08)}
-body.light-theme .title,body.light-theme .bubble,body.light-theme .field label,body.light-theme .settings .h{color:#1a1a1a}
-body.light-theme .field input,body.light-theme .field select,body.light-theme .box,body.light-theme .composer{background:rgba(255,255,255,.7);color:#1a1a1a;border-color:rgba(0,0,0,.1)}
-body.light-theme .msg.user .bubble{color:#1e40af}
-body.light-theme .tool,body.light-theme .btn-sm{background:rgba(255,255,255,.7);color:#5a6478;border-color:rgba(0,0,0,.1)}
-body.light-theme .comp-side,body.light-theme .editor-wrap{background:rgba(250,250,252,.7)}
-body.light-theme .comp-item{color:#3a3a42}
-body.light-theme .hist{background:rgba(250,250,252,.95)}
-body.light-theme .hist-item{background:rgba(255,255,255,.7);color:#1a1a1a}
-body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
+.inspector-hint .exit{padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;font-size:11px;margin-left:4px;cursor:pointer;font-family:inherit}
+/* 元素选中后的悬浮小窗 */
+.inspector-popover{position:fixed;z-index:99988;background:rgba(15,15,18,.98);backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);border:1px solid rgba(255,255,255,.15);border-radius:16px;box-shadow:0 20px 60px -16px rgba(0,0,0,.9);display:none;flex-direction:column;width:calc(100vw - 32px);max-width:360px;max-height:60vh;overflow:hidden;animation:pop-in .2s ease}
+.inspector-popover.show{display:flex}
+@keyframes pop-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.inspector-popover-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;cursor:grab;user-select:none}
+.inspector-popover-title{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#e8ecf4;min-width:0;flex:1}
+.inspector-popover-title .tag{font-size:11px;color:#a5d6ff;font-family:Consolas,monospace;background:rgba(165,214,255,.1);padding:2px 8px;border-radius:6px;border:1px solid rgba(165,214,255,.2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.inspector-popover-actions{display:flex;gap:6px;flex-shrink:0}
+.inspector-popover-btn{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#8b94a8;font-size:11px;font-family:inherit;cursor:pointer;min-height:30px;display:inline-flex;align-items:center;gap:4px}
+.inspector-popover-btn:hover{border-color:rgba(255,255,255,.2);color:#fff}
+.inspector-popover-btn.primary{background:linear-gradient(135deg,#3a3a42,#1a1a20);border-color:rgba(255,255,255,.15);color:#fff}
+.inspector-popover-btn.close{padding:5px 8px;color:#5a6478}
+.inspector-popover-btn.close:hover{color:#fca5a5;border-color:rgba(239,68,68,.4)}
+.inspector-popover-preview{background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.06);height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+.inspector-popover-preview iframe{width:100%;height:100%;border:none;background:#fff;border-radius:6px;transform-origin:top left}
+.inspector-popover-body{flex:1;overflow-y:auto;padding:10px 14px;-webkit-overflow-scrolling:touch;min-height:0}
+.inspector-popover-foot{display:flex;gap:6px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.inspector-popover-foot button{flex:1;padding:8px;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;min-height:36px}
+/* 放大查看模态 */
+.inspector-magnify{position:fixed;inset:0;z-index:99992;background:rgba(5,5,6,.98);backdrop-filter:blur(20px);display:none;flex-direction:column}
+.inspector-magnify.show{display:flex}
+.inspector-magnify-head{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.inspector-magnify-head h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px}
+.inspector-magnify-head h3 .tag{font-size:12px;color:#a5d6ff;font-family:Consolas,monospace;background:rgba(165,214,255,.1);padding:2px 8px;border-radius:6px;border:1px solid rgba(165,214,255,.2)}
+.inspector-magnify-head .close{padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,36,.6);color:#c9d1e3;font-size:13px;font-family:inherit;cursor:pointer}
+.inspector-magnify-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:14px}
+.inspector-magnify-preview{background:#fff;border-radius:12px;overflow:hidden;flex:1;min-height:200px;max-height:50vh;border:1px solid rgba(255,255,255,.1)}
+.inspector-magnify-preview iframe{width:100%;height:100%;border:none;background:#fff;min-height:200px}
+.inspector-magnify .inspector-prop label{color:#8b94a8;font-size:12px}
+.inspector-magnify .inspector-prop input{padding:10px 12px;font-size:14px}
+.inspector-magnify-foot{display:flex;gap:8px;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.inspector-magnify-foot button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;min-height:46px}
+.inspector-magnify-foot button.primary{background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.15);color:#fff}
+.inspector-magnify-foot button.secondary{background:rgba(30,30,36,.6);border:1px solid rgba(255,255,255,.1);color:#c9d1e3}
+/* 全屏预览增强（移动端） */
+.pv-wrap.preview-fullscreen.mobile-fs{padding:0;padding-top:0;padding-bottom:0}
+.pv-wrap.preview-fullscreen.mobile-fs .pv{border-radius:0;border:none}
 @media (max-width: 900px), (pointer: coarse) {
   .app{flex-direction:column;height:100%}
   .panel{display:none;height:100%}
   .panel.mobile-active{display:flex;flex:1;width:100%!important;border-right:none;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  body.fullscreen-mode .panel.mobile-active{padding-bottom:0}
   .mobile-tabs{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,15,18,.92);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom);height:calc(60px + env(safe-area-inset-bottom))}
+  body.fullscreen-mode .mobile-tabs{display:none!important}
   .mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:#5a6478;cursor:pointer;font-family:inherit;font-size:10.5px;font-weight:600;transition:all .18s;position:relative;padding:8px 4px;-webkit-tap-highlight-color:transparent}
   .mtab svg{width:22px;height:22px;transition:all .18s}
   .mtab.active{color:#e8ecf4}
@@ -399,6 +419,7 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
   .mtab:active{transform:scale(.93)}
   .inspector{display:none!important}
   .head{padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top))}
+  body.fullscreen-mode .head{padding-top:12px;display:none}
   .settings{padding:10px 14px;max-height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .settings.collapsed{max-height:44px;padding-top:8px;padding-bottom:8px}
   .field input,.field select{font-size:16px;padding:12px 12px}
@@ -408,6 +429,7 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
   .av{width:26px;height:26px;border-radius:8px}
   .av svg{width:13px;height:13px}
   .composer{padding:10px 12px calc(10px + env(safe-area-inset-bottom));flex-shrink:0}
+  body.fullscreen-mode .composer{padding-bottom:10px}
   .bar{padding:6px 8px;gap:6px}
   .modify-toggle{padding:4px 6px;font-size:10.5px}
   .btn-go{padding:10px 18px;font-size:13.5px;min-height:42px}
@@ -465,6 +487,8 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
   .qcard{min-height:60px;padding:14px}
   body.keyboard-open .mobile-tabs{display:none!important}
   body.keyboard-open .composer{padding-bottom:8px}
+  /* 全屏模式下隐藏其他 UI */
+  body.fullscreen-mode .mtab{display:none}
 }
 @media (max-width: 380px) {
   .pv-grid{grid-template-columns:1fr}
@@ -594,9 +618,9 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
         <button class="tool" onclick="addCurrentToFavorites()" title="把当前版本加入收藏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</button>
         <button class="tool" onclick="showTemplates()" title="Prompt 模板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>模板</button>
         <button class="tool" onclick="insertSnippet('color')" title="颜色选择器"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>取色</button>
-        <button class="tool" onclick="insertSnippet('image')" title="插入占位图">🖼 占位图</button>
-        <button class="tool" onclick="insertSnippet('lorem')" title="插入 Lorem 文本">📝 Lorem</button>
-        <button class="tool" onclick="showPromptDropdown()" title="常用 prompt">💡 常用</button>
+        <button class="tool" onclick="insertSnippet('image')" title="插入占位图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>占位图</button>
+        <button class="tool" onclick="insertSnippet('lorem')" title="插入 Lorem 文本"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Lorem</button>
+        <button class="tool" onclick="showPromptDropdown()" title="常用 prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>常用</button>
       </div>
       <div class="replace-bar" id="replaceBar">
         <input type="text" id="replaceFind" placeholder="查找…" onkeydown="replaceKeydown(event)">
@@ -746,19 +770,6 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
   </div>
 </div>
 
-<div class="modal-mask" id="emojiModal">
-  <div class="modal">
-    <div class="modal-head"><span id="emojiTitle">预览 Emoji 总结</span><span class="close" onclick="closeEmojiSummary()">✕</span></div>
-    <div class="modal-body" style="align-items:center;text-align:center">
-      <div id="emojiContent" style="font-size:42px;line-height:1.4;padding:10px 0"></div>
-      <p style="font-size:12px;color:#8b94a8;line-height:1.6">用 emoji 抽象描述这个页面</p>
-    </div>
-    <div class="modal-foot">
-      <button class="btn" onclick="copyEmojiSummary()">复制</button>
-    </div>
-  </div>
-</div>
-
 <div class="diff-view" id="diffView">
   <div class="diff-head">
     <h3 id="diffTitle">版本对比</h3>
@@ -787,19 +798,53 @@ body.light-theme .guide h3,body.light-theme .guide>p{color:#1a1a1a}
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 </button>
 
-<div class="inspector-mobile" id="inspectorMobile">
-  <div class="inspector-mobile-bar">
-    <div class="inspector-mobile-title"><span class="dot"></span><span id="inspMobileTag">未选中</span></div>
-    <button class="inspector-mobile-close" onclick="exitMobileInspector()">完成</button>
-  </div>
-  <div class="inspector-mobile-body" id="inspMobileBody"><div class="inspector-empty">点一下页面里的元素，就能看到它的样式</div></div>
-  <div class="inspector-mobile-actions">
-    <button onclick="applyInspectorChanges()">应用修改</button>
-    <button onclick="reselectInspector()">重选</button>
-  </div>
+<!-- 检查器顶部提示 -->
+<div class="inspector-hint" id="inspectorHint">
+  <span class="dot"></span>
+  <span>点击元素查看</span>
+  <button class="exit" onclick="exitMobileInspector()">退出</button>
 </div>
 
 <div class="inspector-crosshair" id="inspectorCrosshair"></div>
+
+<!-- 选中元素后的小悬浮窗 -->
+<div class="inspector-popover" id="inspectorPopover">
+  <div class="inspector-popover-head" id="inspectorPopoverHead">
+    <div class="inspector-popover-title">
+      <span class="tag" id="inspPopTag">元素</span>
+    </div>
+    <div class="inspector-popover-actions">
+      <button class="inspector-popover-btn" onclick="magnifyInspector()" title="放大">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="inspector-popover-btn close" onclick="closeInspectorPopover()" title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="inspector-popover-preview" id="inspPopPreview"></div>
+  <div class="inspector-popover-body" id="inspPopBody"></div>
+  <div class="inspector-popover-foot">
+    <button class="inspector-popover-btn primary" onclick="applyInspectorChanges()">应用</button>
+    <button class="inspector-popover-btn" onclick="reselectInspector()">重选</button>
+  </div>
+</div>
+
+<!-- 放大编辑 -->
+<div class="inspector-magnify" id="inspectorMagnify">
+  <div class="inspector-magnify-head">
+    <h3>元素编辑 <span class="tag" id="inspMagTag">元素</span></h3>
+    <button class="close" onclick="closeMagnify()">关闭</button>
+  </div>
+  <div class="inspector-magnify-body">
+    <div class="inspector-magnify-preview" id="inspMagPreview"></div>
+    <div id="inspMagBody"></div>
+  </div>
+  <div class="inspector-magnify-foot">
+    <button class="secondary" onclick="closeMagnify()">取消</button>
+    <button class="primary" onclick="applyInspectorChanges();closeMagnify();">应用修改</button>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
