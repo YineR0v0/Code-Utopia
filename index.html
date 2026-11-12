@@ -175,12 +175,33 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 .comp-actions button:active{transform:scale(.95)}
 .comp-actions button svg{width:12px;height:12px}
 .editor-col{flex:1;display:flex;flex-direction:column;min-width:0;gap:6px;overflow:hidden}
+
+/* --- 强制修正编辑器尺寸 --- */
+.editor-wrap {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(8,8,10,.6);
+  position: relative;
+  backdrop-filter: blur(14px);
+}
+#editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+/* ------------------------ */
+
 .comp-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#5a6478;min-height:24px;flex-wrap:wrap;flex-shrink:0}
 .comp-bar input{background:rgba(8,8,10,.7);color:#e8ecf4;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;width:110px;-webkit-user-select:text;user-select:text}
 .comp-bar input:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .comp-bar select{background:rgba(8,8,10,.7);color:#a5d6ff;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace}
-.editor-wrap{ position:relative; }
-#editor{ position:absolute; inset:0; width:100%; height:100%; }
 .ta{flex:1;padding:15px;background:rgba(8,8,10,.6);color:#a5d6ff;border:1px solid rgba(255,255,255,.06);border-radius:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.7;resize:none;white-space:pre;overflow:auto;tab-size:2;width:100%;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
 .ta:focus{outline:none;border-color:rgba(150,150,160,.4)}
 .pv-tools{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex-wrap:wrap;background:rgba(20,20,24,.3)}
@@ -903,7 +924,8 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/loader.min.js"></script>
+<!-- 修正 Monaco 引入路径 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
