@@ -247,9 +247,7 @@ function buildModifySystemPrompt(ctx){
     ctx.html,
     '【代码结束】'
   ].join('\n');
-}
-
-/* ================= 工程管理 ================= */
+}/* ================= 工程管理 ================= */
 function loadProjects(){
   try{ var raw = localStorage.getItem('cu-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
   var activeRaw = localStorage.getItem('cu-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
@@ -277,7 +275,9 @@ function saveProjects(){
 }
 function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
 function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
-function closeProjects(){ $('projectsView').classList.remove('show'); }function getProjectPreviewText(p){
+function closeProjects(){ $('projectsView').classList.remove('show'); }
+
+function getProjectPreviewText(p){
   if(!p.components || p.components.length === 0) return '空工程';
   for(var i = 0; i < p.components.length; i++){
     var c = p.components[i];
@@ -396,6 +396,361 @@ function loadActiveProjectIntoState(){
   renderComponents();
   renderHistory();
   refreshPreview();
+  setTimeout(function(){ if(state.editorReady) state.editor.layout(); }, 100);
+}
+function renderMessages(){
+  var msgs = $('msgs'); msgs.innerHTML = '';
+  if(state.messages.length === 0){ renderGuide(); return; }
+  for(var i = 0; i < state.messages.length; i++){
+    var m = state.messages[i];
+    var div = document.createElement('div');
+    div.className = 'msg ' + (m.role || 'assistant');
+    var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    var iconAI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+    div.innerHTML = '<div class="av">' + (m.role==='user' ? iconUser : iconAI) + '</div><div class="bubble"></div>';
+    var b = div.querySelector('.bubble');
+    b.textContent = m.display || m.content || '';
+    if(m.sub){ var s = document.createElement('span'); s.className='sub'; s.textContent = m.sub; b.appendChild(s); }
+    msgs.appendChild(div);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+/* ================= 组合预览 ================= */
+function compLang(c){ if(!c) return 'html'; return c.type === 'css' ? 'css' : (c.type === 'js' ? 'javascript' : 'html'); }
+function buildPreviewHtml(){
+  var htmlParts = '', cssParts = '', jsParts = '';
+  for(var i = 0; i < state.components.length; i++){
+    var c = state.components[i]; if(!c.enabled) continue;
+    if(c.type === 'html') htmlParts += '\n' + c.code + '\n';
+    else if(c.type === 'css') cssParts += '\n' + c.code + '\n';
+    else if(c.type === 'js') jsParts += '\n' + c.code + '\n';
+  }
+  var hasDoc = /<html[\s>]/i.test(htmlParts);
+  if(hasDoc){
+    var out = htmlParts;
+    if(cssParts) out = out.replace(/<\/head>/i, '<style>\n' + cssParts + '\n</style>\n</head>');
+    if(jsParts && out.indexOf('</body>') >= 0) out = out.replace(/<\/body>/i, '<script>\n' + jsParts + '\n<' + '/script>\n</body>');
+    return out;
+  }
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>\n' + cssParts + '\n</style></head><body>\n' + htmlParts + '\n<script>\n' + jsParts + '\n<' + '/script>\n</body></html>';
+}
+function refreshPreview(){
+  var iframe = $('preview');
+  if(!iframe) return;
+  if(state.zoomMode){
+    var html = buildPreviewHtml();
+    iframe.srcdoc = html;
+    setTimeout(applyZoomTransform, 80);
+  } else {
+    iframe.srcdoc = buildPreviewHtml();
+  }
+}
+
+function setConn(type, text){
+  var el = $('conn');
+  el.className = 'conn ' + type;
+  el.querySelector('.txt').textContent = text;
+}
+function updateMode(){
+  var live = $('apiKey').value.trim().length > 0 && state.connected;
+  var tag = $('modeTag');
+  tag.textContent = live ? '真实 API' : '演示模式';
+  tag.className = 'tag' + (live ? ' live' : '');
+}
+function addMsg(role, text, sub){
+  state.messages.push({ role: role, content: text, display: text, sub: sub || '' });
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var iconAI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+  div.innerHTML = '<div class="av">' + (role==='user' ? iconUser : iconAI) + '</div><div class="bubble"></div>';
+  var b = div.querySelector('.bubble');
+  b.textContent = text;
+  if(sub){ var s = document.createElement('span'); s.className='sub'; s.textContent = sub; b.appendChild(s); }
+  $('msgs').appendChild(div);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+  if(isMobile() && state.mobileTab !== 'chat' && role === 'assistant'){
+    var badge = $('chatBadge');
+    if(badge) badge.classList.add('show');
+  }
+  var p = getActiveProject();
+  if(p){ p.messages = state.messages; saveProjects(); }
+}
+
+/* ================= 密钥管理 ================= */
+function loadKeyProfiles(){
+  try{ var raw = localStorage.getItem('cu-keys'); if(raw) state.keyProfiles = JSON.parse(raw) || []; }catch(e){ state.keyProfiles = []; }
+  if(state.keyProfiles.length === 0){
+    try{
+      var old = JSON.parse(localStorage.getItem('cu-cfg') || '{}');
+      if(old.apiKey) state.keyProfiles.push({ name: '默认配置', baseUrl: old.baseUrl || 'https://api.deepseek.com/v1', apiKey: old.apiKey, model: old.model || '' });
+    }catch(e){}
+  }
+  renderKeySelect();
+  if(state.keyProfiles.length > 0) switchKeyProfile('0');
+}
+function saveKeyProfiles(){ try{ localStorage.setItem('cu-keys', JSON.stringify(state.keyProfiles)); }catch(e){} }
+function renderKeySelect(){
+  var sel = $('keySelect');
+  var html = '<option value="">— 选择配置 —</option>';
+  for(var i = 0; i < state.keyProfiles.length; i++) html += '<option value="' + i + '">' + esc(state.keyProfiles[i].name || ('配置 ' + (i+1))) + '</option>';
+  sel.innerHTML = html;
+  if(state.activeProfile >= 0) sel.value = String(state.activeProfile);
+}
+function switchKeyProfile(idx){
+  if(idx === '' || idx === null){ state.activeProfile = -1; return; }
+  var i = parseInt(idx, 10);
+  if(isNaN(i) || !state.keyProfiles[i]) return;
+  state.activeProfile = i;
+  var p = state.keyProfiles[i];
+  $('profileName').value = p.name || '';
+  $('baseUrl').value = p.baseUrl || '';
+  $('apiKey').value = p.apiKey || '';
+  state.connected = false;
+  state.allModels = [];
+  $('model').innerHTML = '<option value="">先测试连接</option>';
+  $('model').disabled = true;
+  state.currentModel = p.model || '';
+  if(p.model && p.model.length){
+    state.allModels = [p.model];
+    $('model').innerHTML = '<option value="' + esc(p.model) + '">' + esc(p.model) + '</option>';
+    $('model').value = p.model;
+    $('model').disabled = false;
+  }
+  setConn('', '已切换配置');
+  updateMode();
+  renderKeySelect();
+  try{ renderAttachments(); }catch(e){}
+}
+function newKeyProfile(){
+  state.keyProfiles.push({ name: '新配置', baseUrl: 'https://api.deepseek.com/v1', apiKey: '', model: '' });
+  state.activeProfile = state.keyProfiles.length - 1;
+  saveKeyProfiles();
+  switchKeyProfile(state.activeProfile);
+  $('profileName').focus();
+}
+function saveKeyProfile(ev){
+  if(state.activeProfile < 0){ state.keyProfiles.push({}); state.activeProfile = state.keyProfiles.length - 1; }
+  var p = state.keyProfiles[state.activeProfile];
+  p.name = $('profileName').value.trim() || ('配置 ' + (state.activeProfile + 1));
+  p.baseUrl = $('baseUrl').value.trim();
+  p.apiKey = $('apiKey').value.trim();
+  p.model = $('model').value || state.currentModel || p.model || '';
+  saveKeyProfiles();
+  renderKeySelect();
+  var btn = (ev && ev.target) || (window.event && window.event.target);
+  if(btn){ var old = btn.innerHTML; btn.innerHTML = '✓ 已保存'; setTimeout(function(){ btn.innerHTML = old; }, 1200); }
+  setConn('ok', '配置已保存（含模型）');
+  updateMode();
+  toast('✅ 配置已保存');
+}
+function deleteKeyProfile(){
+  if(state.activeProfile < 0) return;
+  if(!confirm('确定删除「' + (state.keyProfiles[state.activeProfile].name || '该配置') + '」？')) return;
+  state.keyProfiles.splice(state.activeProfile, 1);
+  state.activeProfile = state.keyProfiles.length > 0 ? 0 : -1;
+  saveKeyProfiles();
+  if(state.activeProfile >= 0) switchKeyProfile(state.activeProfile);
+  else {
+    renderKeySelect();
+    $('profileName').value = ''; $('baseUrl').value = 'https://api.deepseek.com/v1'; $('apiKey').value = '';
+    $('model').innerHTML = '<option value="">先测试连接</option>'; $('model').disabled = true;
+    setConn('', '未连接');
+  }
+}
+
+/* ================= 模型搜索 ================= */
+function populateModels(list){
+  state.allModels = list.slice();
+  var sel = $('model');
+  var html = '';
+  for(var i = 0; i < list.length; i++) html += '<option value="' + esc(list[i]) + '">' + esc(list[i]) + '</option>';
+  sel.innerHTML = html || '<option value="">无可用模型</option>';
+  sel.disabled = list.length === 0;
+  $('modelCount').textContent = '(' + list.length + ' 个)';
+  $('modelFilter').style.display = list.length > 6 ? 'block' : 'none';
+  $('modelFilter').value = '';
+  $('modelFilterClear').style.display = 'none';
+  var currentSel = state.currentModel || '';
+  var savedModel = state.keyProfiles[state.activeProfile] ? (state.keyProfiles[state.activeProfile].model || '') : '';
+  var finalModel = '';
+  if(currentSel && list.indexOf(currentSel) >= 0) finalModel = currentSel;
+  else if(savedModel && list.indexOf(savedModel) >= 0) finalModel = savedModel;
+  else {
+    var prefer = list.find(function(m){ return /gpt-4o|deepseek-chat|qwen-plus|claude-3/i.test(m); });
+    finalModel = prefer || list[0] || '';
+  }
+  if(finalModel) sel.value = finalModel;
+  state.currentModel = sel.value;
+  if(state.activeProfile >= 0 && state.keyProfiles[state.activeProfile] && state.currentModel){
+    state.keyProfiles[state.activeProfile].model = state.currentModel;
+    saveKeyProfiles();
+  }
+}
+function filterModels(){
+  var q = $('modelFilter').value.trim().toLowerCase();
+  $('modelFilterClear').style.display = q ? 'block' : 'none';
+  var list = state.allModels.filter(function(m){ return !q || m.toLowerCase().indexOf(q) >= 0; });
+  var sel = $('model');
+  var cur = sel.value;
+  var html = '';
+  for(var i = 0; i < list.length; i++) html += '<option value="' + esc(list[i]) + '">' + esc(list[i]) + '</option>';
+  sel.innerHTML = html || '<option value="">无匹配模型</option>';
+  if(list.indexOf(cur) >= 0) sel.value = cur;
+  else if(list.length > 0) sel.value = list[0];
+  $('modelCount').textContent = '(' + list.length + '/' + state.allModels.length + ')';
+}
+function clearModelFilter(){ $('modelFilter').value = ''; filterModels(); }/* ================= 工程管理 ================= */
+function loadProjects(){
+  try{ var raw = localStorage.getItem('cu-projects'); if(raw) state.projects = JSON.parse(raw) || []; }catch(e){ state.projects = []; }
+  var activeRaw = localStorage.getItem('cu-active-project'); if(activeRaw) state.activeProjectId = activeRaw;
+  if(state.projects.length === 0){ var p = newProjectData('我的第一个工程'); state.projects.push(p); state.activeProjectId = p.id; }
+  if(!state.activeProjectId || !state.projects.some(function(x){ return x.id === state.activeProjectId; })) state.activeProjectId = state.projects[0].id;
+  for(var i = 0; i < state.projects.length; i++){
+    if(!state.projects[i].messages) state.projects[i].messages = [];
+    if(!state.projects[i].history) state.projects[i].history = [];
+    if(!state.projects[i].favorites) state.projects[i].favorites = [];
+    if(!state.projects[i].gallery) state.projects[i].gallery = [];
+  }
+  saveProjects();
+}
+function newProjectData(name){
+  return {
+    id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    name: name || '未命名工程', createdAt: Date.now(), updatedAt: Date.now(),
+    components: [{ name: '页面结构', type: 'html', code: '<div style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#1a1a20,#050506 60%);color:#e8ecf4;font-family:system-ui,sans-serif;text-align:center;padding:20px"><div><div style="width:76px;height:76px;border-radius:24px;margin:0 auto 22px;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,#3a3a42,#1a1a20);border:1px solid rgba(255,255,255,.12)">✦</div><h1 style="font-size:22px;margin-bottom:10px">Code Utopia</h1><p style="color:#8b94a8;font-size:13.5px;line-height:1.7;max-width:420px;margin:0 auto">在对话页描述页面，AI 会生成代码并在这里预览。</p></div></div>', enabled: true }],
+    history: [], historyIndex: -1, messages: [], favorites: [], gallery: []
+  };
+}
+function saveProjects(){
+  try{ localStorage.setItem('cu-projects', JSON.stringify(state.projects)); }catch(e){}
+  try{ localStorage.setItem('cu-active-project', state.activeProjectId); }catch(e){}
+}
+function getActiveProject(){ for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === state.activeProjectId) return state.projects[i]; } return null; }
+function openProjects(){ renderProjects(); $('projectsView').classList.add('show'); }
+function closeProjects(){ $('projectsView').classList.remove('show'); }
+
+function getProjectPreviewText(p){
+  if(!p.components || p.components.length === 0) return '空工程';
+  for(var i = 0; i < p.components.length; i++){
+    var c = p.components[i];
+    if(c.type === 'html' && c.code && c.code.trim()){
+      var txt = c.code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if(txt) return txt.slice(0, 80);
+    }
+  }
+  return p.components.length + ' 个组件';
+}
+function renderProjects(){
+  var q = ($('projSearch').value || '').toLowerCase();
+  var grid = $('projGrid');
+  var list = state.projects.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0; });
+  list.sort(function(a, b){ return b.updatedAt - a.updatedAt; });
+  var projIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+  var html = '';
+  for(var i = 0; i < list.length; i++){
+    var p = list[i];
+    var active = p.id === state.activeProjectId ? ' active' : '';
+    var d = new Date(p.updatedAt);
+    var time = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    var preview = getProjectPreviewText(p);
+    var msgCount = (p.messages || []).length;
+    var favCount = (p.favorites || []).length;
+    html += '<div class="proj-card' + active + '" onclick="switchProject(\'' + p.id + '\')">' +
+      '<div class="proj-actions"><button class="del" onclick="event.stopPropagation();openRenameProject(\'' + p.id + '\')" title="重命名">✎</button><button class="del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="删除">✕</button></div>' +
+      '<div class="pemoji">' + projIconSvg + '</div>' +
+      '<h3>' + esc(p.name) + '</h3>' +
+      '<div class="proj-preview">' + esc(preview) + '</div>' +
+      '<div class="meta">' + (p.components || []).length + ' 组件 · ' + (p.history || []).length + ' 版本 · ' + favCount + ' 收藏 · ' + msgCount + ' 对话<br>' + time + '</div>' +
+      '</div>';
+  }
+  html += '<div class="new-proj" onclick="createProject()"><div class="plus">＋</div><span>新建工程</span></div>';
+  if(list.length === 0 && q) html = '<div class="pv-empty" style="grid-column:1/-1">没有匹配「' + esc(q) + '」的工程</div>' + html;
+  grid.innerHTML = html;
+}
+
+/* ================= 工程操作 ================= */
+function createProject(){
+  var name = prompt('新工程名称：', '新工程'); if(name === null) return;
+  name = name.trim() || '新工程';
+  var p = newProjectData(name);
+  state.projects.push(p);
+  state.activeProjectId = p.id;
+  saveProjects();
+  loadActiveProjectIntoState();
+  renderProjects();
+  closeProjects();
+}
+function switchProject(id){
+  if(id === state.activeProjectId){ closeProjects(); return; }
+  saveCurrentProject();
+  state.activeProjectId = id;
+  saveProjects();
+  loadActiveProjectIntoState();
+  closeProjects();
+  addMsg('assistant', '已切换到工程：' + (getActiveProject() || {}).name, '');
+}
+function deleteProject(id){
+  var p = null;
+  for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === id){ p = state.projects[i]; break; } }
+  if(!p) return;
+  if(!confirm('确定删除工程「' + p.name + '」？')) return;
+  state.projects = state.projects.filter(function(x){ return x.id !== id; });
+  if(state.activeProjectId === id){
+    if(state.projects.length > 0) state.activeProjectId = state.projects[0].id;
+    else { var np = newProjectData('我的第一个工程'); state.projects.push(np); state.activeProjectId = np.id; }
+    loadActiveProjectIntoState();
+  }
+  saveProjects();
+  renderProjects();
+}
+function openRenameProject(id){
+  state.renamingProjectId = id;
+  var p = null;
+  for(var i = 0; i < state.projects.length; i++){ if(state.projects[i].id === id){ p = state.projects[i]; break; } }
+  if(!p) return;
+  $('renameProjectInput').value = p.name;
+  $('renameProjectModal').classList.add('show');
+  setTimeout(function(){ $('renameProjectInput').focus(); $('renameProjectInput').select(); }, 50);
+}
+function closeRenameProject(){ $('renameProjectModal').classList.remove('show'); state.renamingProjectId = null; }
+function doRenameProject(){
+  if(!state.renamingProjectId) return;
+  var newName = $('renameProjectInput').value.trim();
+  if(!newName){ alert('名称不能为空'); return; }
+  for(var i = 0; i < state.projects.length; i++){
+    if(state.projects[i].id === state.renamingProjectId){ state.projects[i].name = newName; state.projects[i].updatedAt = Date.now(); break; }
+  }
+  saveProjects(); renderProjects(); closeRenameProject();
+}
+
+function saveCurrentProject(){
+  var p = getActiveProject(); if(!p) return;
+  var cur = state.components[state.activeComp];
+  if(cur && state.editorReady) cur.code = getEditorValue();
+  p.components = state.components;
+  p.history = state.history;
+  p.historyIndex = state.historyIndex;
+  p.messages = state.messages;
+  p.updatedAt = Date.now();
+  saveProjects();
+}
+function loadActiveProjectIntoState(){
+  var p = getActiveProject(); if(!p) return;
+  state.components = p.components || [];
+  if(state.components.length === 0) state.components = [{ name: '页面结构', type: 'html', code: '', enabled: true }];
+  state.activeComp = 0;
+  state.history = p.history || [];
+  state.historyIndex = typeof p.historyIndex === 'number' ? p.historyIndex : state.history.length - 1;
+  state.messages = p.messages || [];
+  state._undoStack = []; state._redoStack = [];
+  renderMessages();
+  setEditorValue(getActiveCompCode(), compLang(state.components[0]));
+  renderComponents();
+  renderHistory();
+  refreshPreview();
+  setTimeout(function(){ if(state.editorReady) state.editor.layout(); }, 100);
 }
 function renderMessages(){
   var msgs = $('msgs'); msgs.innerHTML = '';
@@ -643,6 +998,15 @@ function initEditor(){
     }
     bindLongPress($('editor'));
     console.log('✅ Monaco 就绪');
+    // 修复 Monaco 尺寸为 0 的问题
+    if(window.ResizeObserver){
+      try{ new ResizeObserver(function(){ if(state.editorReady) state.editor.layout(); }).observe($('editor')); }catch(e){}
+    }
+    var forceLayout = function(){ if(state.editorReady){ try{ state.editor.layout(); state.editor.setScrollLeft(state.editor.getScrollLeft()); state.editor.setScrollTop(state.editor.getScrollTop()); }catch(e){} } };
+    setTimeout(forceLayout, 50);
+    setTimeout(forceLayout, 200);
+    setTimeout(forceLayout, 500);
+    setTimeout(forceLayout, 1000);
   });
 }
 function getActiveCompCode(){ var c = state.components[state.activeComp]; return c ? (c.code || '') : ''; }
@@ -719,7 +1083,7 @@ function redoCode(){
   toast('↷ 已重做');
 }
 
-/* ================= 工具栏分组（最终版） ================= */
+/* ================= 工具栏分组 ================= */
 var TOOL_GROUP_MAP = {
   file: 'toolPanelFile',
   edit: 'toolPanelEdit',
@@ -756,12 +1120,10 @@ function toggleToolGroup(group){
 
   var willShow = !targetPanel.classList.contains('show');
 
-  // 先全部关闭（含清内联样式）
   closeAllToolPanels();
 
-  if(!willShow) return; // 再次点击同一按钮 = 收起
+  if(!willShow) return;
 
-  // 打开目标面板
   targetPanel.classList.add('show');
   targetPanel.style.cssText = _panelInlineStyle();
 
@@ -771,7 +1133,6 @@ function toggleToolGroup(group){
     mask.style.cssText = 'position:fixed!important;inset:0!important;z-index:99989!important;background:rgba(0,0,0,.55)!important;display:block!important;';
   }
 
-  // 高亮按钮
   var btns = document.querySelectorAll('.tool-group-btn');
   for(var i = 0; i < btns.length; i++){
     btns[i].classList.toggle('active', btns[i].getAttribute('data-group') === group);
@@ -1090,9 +1451,7 @@ function restoreHistory(i){
   addMsg('assistant', '已回滚到 v' + item.version, item.prompt || '');
   if(isMobile()) switchMobileTab('preview');
 }
-function toggleHistory(){ $('hist').classList.toggle('show'); }
-
-/* ================= 代码搜索 ================= */
+function toggleHistory(){ $('hist').classList.toggle('show'); }/* ================= 代码搜索 ================= */
 function toggleSearch(){
   var bar = $('searchBar');
   var showing = bar.classList.toggle('show');
@@ -1132,7 +1491,9 @@ function gotoSearchResult(idx){
   }, 100);
 }
 function searchKeydown(e){ if(e.key === 'Enter'){ e.preventDefault(); searchNav(e.shiftKey ? -1 : 1); } else if(e.key === 'Escape'){ toggleSearch(); } }
-function clearSearchHighlight(){ $('searchCount').textContent = '0/0'; state.searchResults = []; }/* ================= 缩放模式 ================= */
+function clearSearchHighlight(){ $('searchCount').textContent = '0/0'; state.searchResults = []; }
+
+/* ================= 缩放模式 ================= */
 function toggleZoomMode(){
   state.zoomMode = !state.zoomMode;
   var t1 = $('zoomToggle');
@@ -1198,6 +1559,7 @@ function applyZoomTransform(){
     }, { passive: false });
   }
 })();
+
 /* ================= 截图 ================= */
 function takeScreenshot(){
   var iframe = $('preview');
@@ -2644,7 +3006,6 @@ window.addEventListener('load', function(){
   try { initEditor(); } catch(e){ console.error(e); }
   try { initStyleBarSafely(); } catch(e){ console.error(e); }
   try { loadTheme(); } catch(e){ console.error(e); }
-  try { setupDraftSave(); } catch(e){ console.error(e); }
   try{ var savedModify = localStorage.getItem('cu-modify-mode') === '1'; var cb = $('modifyMode'); if(cb){ cb.checked = savedModify; onModifyToggle(savedModify); } }catch(e){}
   try { var loadedShare = loadFromShareHash(); if(!loadedShare && state.messages.length === 0) renderGuide(); else if(!loadedShare) renderMessages(); } catch(e){ console.error(e); }
   try { refreshPreview(); } catch(e){ console.error(e); }
@@ -2654,6 +3015,8 @@ window.addEventListener('load', function(){
   window.addEventListener('resize', function(){ try { applyViewport(); } catch(e){} try { if(state.editorReady && isMobile() && state.mobileTab === 'code') state.editor.layout(); } catch(e){} });
   window.addEventListener('fullscreenchange', function(){ setTimeout(function(){ try { applyViewport(); } catch(e){} try { if(state.editorReady) state.editor.layout(); } catch(e){} }, 200); });
   setInterval(function(){ try { saveCurrentProject(); } catch(e){} }, 10000);
+  // 延迟强制 layout 一次，解决 Monaco 尺寸 0
+  setTimeout(function(){ if(state.editorReady) try{ state.editor.layout(); }catch(e){} }, 500);
   console.log('✅ Code Utopia 初始化完成');
 });
 
@@ -2686,3 +3049,86 @@ function renderGuide(){
   msgs.appendChild(g);
 }
 function quickGen(p){ $('prompt').value = p; generate(); }
+
+/* ================= 补全缺失的插入、替换、自动保存等功能 ================= */
+
+function insertSnippet(type){
+  var text = '';
+  if(type === 'color') text = '#3b82f6';
+  else if(type === 'image') text = 'https://picsum.photos/400/300';
+  else if(type === 'lorem') text = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
+  else return;
+  
+  if(state.editorReady){
+    var pos = state.editor.getPosition();
+    state.editor.executeEdits('', [{ range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), text: text }]);
+    state.editor.focus();
+  } else {
+    var ta = $('fallbackTa');
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + text.length;
+    setActiveCompCode(ta.value);
+    debouncePreview();
+  }
+}
+
+var _replaceState = { matches: [], index: 0 };
+function showReplaceBar(){
+  var bar = $('replaceBar');
+  if(bar) bar.classList.add('show');
+  var input = $('replaceFind');
+  if(input){ input.focus(); var val = getEditorValue(); if(state.editorReady && state.editor.getSelection && !state.editor.getSelection().isEmpty()){ $('replaceFind').value = state.editor.getModel().getValueInRange(state.editor.getSelection()); } }
+}
+function hideReplaceBar(){
+  var bar = $('replaceBar');
+  if(bar) bar.classList.remove('show');
+  _replaceState.matches = [];
+  if(state.editorReady){ state.editor.setSelection(new monaco.Range(1,1,1,1)); }
+}
+function replaceKeydown(e){
+  if(e.key === 'Enter'){ e.preventDefault(); doReplace(); }
+  else if(e.key === 'Escape'){ hideReplaceBar(); }
+}
+function doReplace(){
+  var find = $('replaceFind').value;
+  var replaceWith = $('replaceWith').value;
+  if(!find) return;
+  if(state.editorReady){
+    var model = state.editor.getModel();
+    var matches = model.findMatches(find, false, false, false, null, false);
+    if(matches.length > 0){
+      var match = matches[0];
+      state.editor.executeEdits('', [{ range: match.range, text: replaceWith }]);
+    }
+  }
+}
+function doReplaceAll(){
+  var find = $('replaceFind').value;
+  var replaceWith = $('replaceWith').value;
+  if(!find) return;
+  var count = 0;
+  if(state.editorReady){
+    var model = state.editor.getModel();
+    var matches = model.findMatches(find, false, false, false, null, false);
+    count = matches.length;
+    var edits = matches.map(function(m){ return { range: m.range, text: replaceWith }; });
+    state.editor.executeEdits('', edits);
+  } else {
+    var ta = $('fallbackTa');
+    var parts = ta.value.split(find);
+    count = parts.length - 1;
+    ta.value = parts.join(replaceWith);
+    setActiveCompCode(ta.value);
+    debouncePreview();
+  }
+  $('replaceCount').textContent = count > 0 ? '替换了 ' + count + ' 处' : '未找到';
+  setTimeout(function(){ $('replaceCount').textContent = ''; }, 2000);
+  if(count > 0){ saveCurrentProject(); toast('✅ 替换完成'); }
+}
+
+function setupDraftSave(){
+  // 预留给未来如果需要定时保存草稿（目前 load 事件里已包含 10 秒自动保存）
+  console.log('✅ 草稿自动保存已启用');
+}
