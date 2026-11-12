@@ -627,6 +627,7 @@ button{touch-action:manipulation;font-family:inherit;-webkit-tap-highlight-color
         <button class="tool-group-btn" data-group="share" onclick="toggleToolGroup('share')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享</button>
         <button class="tool-group-btn" data-group="prompt" onclick="toggleToolGroup('prompt')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>Prompt</button>
       </div>
+      <div class="tool-panel-mask" id="toolPanelMask" onclick="closeAllToolPanels()"></div>
       <div class="tool-panel" id="toolPanelFile">
         <div class="tools">
           <button class="tool" id="dlBtn" onclick="downloadZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ZIP</button>
